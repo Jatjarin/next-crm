@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils"
 
 // สร้าง Array ของ Navigation Items เพื่อให้จัดการง่ายขึ้น
 const navItems = [
-  { href: "/dashboard", label: "แดชบอร์ด", icon: LayoutDashboard },
+  { href: "/", label: "แดชบอร์ด", icon: LayoutDashboard },
   { href: "/customers", label: "ลูกค้า", icon: Users },
   { href: "/invoices", label: "ใบแจ้งหนี้", icon: FileText },
   { href: "/reports", label: "รายงาน", icon: BarChart2 },
