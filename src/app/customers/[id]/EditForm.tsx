@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { updateCustomer } from "../actions"
 import { Button } from "@/components/ui/button"
 import {
@@ -13,7 +14,9 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Pencil } from "lucide-react"
 
+// กำหนด Type ของข้อมูลลูกค้า
 type Customer = {
   id: number
   name: string
@@ -29,11 +32,26 @@ interface Props {
 }
 
 export default function EditForm({ customer }: Props) {
+  // 1. เพิ่ม State เพื่อจัดการโหมดการแก้ไข
+  const [isEditing, setIsEditing] = useState(false)
   const updateCustomerWithId = updateCustomer.bind(null, customer.id)
 
+  // 2. ถ้ายังไม่ได้อยู่ในโหมดแก้ไข ให้แสดงแค่ปุ่ม
+  if (!isEditing) {
+    return (
+      <div className="mt-6">
+        <Button onClick={() => setIsEditing(true)}>
+          <Pencil className="mr-2 h-4 w-4" />
+          แก้ไขข้อมูลลูกค้า
+        </Button>
+      </div>
+    )
+  }
+
+  // 3. ถ้าอยู่ในโหมดแก้ไข ให้แสดงฟอร์มเต็มรูปแบบ
   return (
     <form action={updateCustomerWithId}>
-      <Card>
+      <Card className="mt-6">
         <CardHeader>
           <CardTitle>แก้ไขข้อมูลลูกค้า</CardTitle>
           <CardDescription>
@@ -95,7 +113,15 @@ export default function EditForm({ customer }: Props) {
             />
           </div>
         </CardContent>
-        <CardFooter className="flex justify-end">
+        <CardFooter className="flex justify-end gap-2">
+          {/* ปุ่มยกเลิกจะเปลี่ยน State กลับไปเป็น false */}
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setIsEditing(false)}
+          >
+            ยกเลิก
+          </Button>
           <Button type="submit">บันทึกการเปลี่ยนแปลง</Button>
         </CardFooter>
       </Card>
