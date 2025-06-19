@@ -19,7 +19,29 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 
-// ฟังก์ชันสำหรับแปลงค่าสถานะเป็นภาษาไทยและสี
+// 1. สร้าง Type สำหรับรายการสินค้า
+type InvoiceItem = {
+  description: string
+  quantity: number
+  unitPrice: number
+}
+
+// 2. สร้าง Type สำหรับข้อมูลลูกค้า
+type CustomerInfo = {
+  name: string
+}
+
+// 3. อัปเดต Type หลักของ Invoice ให้ถูกต้องตาม Error ที่เกิดขึ้น
+type InvoiceWithCustomer = {
+  id: number
+  invoice_number: string
+  issue_date: string
+  items: InvoiceItem[]
+  status: string
+  // --- แก้ไขที่นี่: กำหนดให้ customers เป็น Array ของข้อมูลลูกค้า ---
+  customers: CustomerInfo[] | null
+}
+
 const getStatusBadge = (status: string) => {
   switch (status) {
     case "Paid":
@@ -40,7 +62,7 @@ const formatDate = (dateString: string) =>
     month: "short",
     day: "numeric",
   })
-const calculateTotal = (items: any[]): number =>
+const calculateTotal = (items: InvoiceItem[]): number =>
   items?.reduce(
     (sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0),
     0
@@ -51,12 +73,24 @@ export default async function InvoicesPage() {
 
   const { data: invoices, error } = await supabase
     .from("invoices")
-    .select(`id, invoice_number, issue_date, items, status, customers ( name )`)
+    .select(
+      `
+            id,
+            invoice_number,
+            issue_date,
+            items,
+            status,
+            customers ( name )
+        `
+    )
     .order("issue_date", { ascending: false })
 
   if (error) {
     return <p className="p-8">เกิดข้อผิดพลาดในการโหลดข้อมูลใบแจ้งหนี้</p>
   }
+
+  // Cast ข้อมูลที่ได้มาให้เป็น Type ที่เรากำหนดไว้อย่างชัดเจน
+  const typedInvoices: InvoiceWithCustomer[] = invoices || []
 
   return (
     <div className="p-8">
@@ -88,7 +122,7 @@ export default async function InvoicesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {invoices.map((invoice) => (
+              {typedInvoices.map((invoice) => (
                 <TableRow key={invoice.id}>
                   <TableCell className="font-medium">
                     <Link
@@ -98,7 +132,8 @@ export default async function InvoicesPage() {
                       {invoice.invoice_number}
                     </Link>
                   </TableCell>
-                  <TableCell>{invoice.customers?.name || "N/A"}</TableCell>
+                  {/* --- แก้ไขที่นี่: เข้าถึงชื่อลูกค้าจาก "สมาชิกตัวแรก" ของ Array --- */}
+                  <TableCell>{invoice.customers?.[0]?.name || "N/A"}</TableCell>
                   <TableCell>{formatDate(invoice.issue_date)}</TableCell>
                   <TableCell className="text-right">
                     ฿

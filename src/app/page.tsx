@@ -18,7 +18,32 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 
-const calculateTotal = (items: any[]): number =>
+// --- 1. สร้าง Type Definitions ที่ถูกต้อง ---
+type InvoiceItem = {
+  description: string
+  quantity: number
+  unitPrice: number
+}
+
+type CustomerInfo = {
+  name: string
+}
+
+type InvoiceWithCustomer = {
+  id: number
+  invoice_number: string
+  items: InvoiceItem[]
+  status: string
+  issue_date: string
+  // กำหนดให้ customers เป็น Array ของข้อมูลลูกค้า
+  customers: CustomerInfo[] | null
+}
+
+interface Item {
+  quantity: number
+  unitPrice: number
+}
+const calculateTotal = (items: Item[]): number =>
   items?.reduce(
     (sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0),
     0
@@ -63,18 +88,22 @@ export default async function DashboardPage() {
     return <p className="p-8">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>
   }
 
-  const totalRevenue = invoices
+  // Cast ข้อมูลให้เป็น Type ที่เรากำหนด
+  const typedInvoices = ((invoices as InvoiceWithCustomer[]) ||
+    []) as InvoiceWithCustomer[]
+
+  const totalRevenue = typedInvoices
     .filter((inv) => inv.status === "Paid")
     .reduce((sum, inv) => sum + calculateTotal(inv.items), 0)
 
-  const outstandingRevenue = invoices
+  const outstandingRevenue = typedInvoices
     .filter((inv) => inv.status === "Sent" || inv.status === "Overdue")
     .reduce((sum, inv) => sum + calculateTotal(inv.items), 0)
 
-  const overdueInvoicesCount = invoices.filter(
+  const overdueInvoicesCount = typedInvoices.filter(
     (inv) => inv.status === "Overdue"
   ).length
-  const recentInvoices = invoices.slice(0, 5)
+  const recentInvoices = typedInvoices.slice(0, 5)
 
   return (
     <div className="p-8 space-y-6">
@@ -156,7 +185,8 @@ export default async function DashboardPage() {
                       {invoice.invoice_number}
                     </Link>
                   </TableCell>
-                  <TableCell>{invoice.customers?.name || "N/A"}</TableCell>
+                  {/* --- แก้ไขที่นี่: เข้าถึงสมาชิกตัวแรกของ Array --- */}
+                  <TableCell>{invoice.customers?.[0]?.name || "N/A"}</TableCell>
                   <TableCell>{formatDate(invoice.issue_date)}</TableCell>
                   <TableCell className="text-right">
                     ฿

@@ -89,6 +89,7 @@ export default function NewInvoicePage() {
                 <Select
                   name="customerId"
                   required
+                  value={selectedCustomerId}
                   onValueChange={setSelectedCustomerId}
                 >
                   <SelectTrigger>

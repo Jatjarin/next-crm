@@ -11,7 +11,11 @@ import {
 // บังคับให้หน้านี้เป็น Dynamic Rendering เสมอ (ไม่ใช้ Cache)
 export const dynamic = "force-dynamic"
 
-const calculateTotal = (items: any[]): number =>
+interface Item {
+  quantity: number
+  unitPrice: number
+}
+const calculateTotal = (items: Item[]): number =>
   items?.reduce(
     (sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0),
     0

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import UpdateStatusButton from "./UpdateStatusButton"
-import PrintButton from "./PrintButton"
+// import PrintButton from "./PrintButton"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import {
   Table,
@@ -36,22 +36,37 @@ const formatDate = (dateString: string) =>
     month: "long",
     day: "numeric",
   })
-const calculateTotal = (items: any[]): number =>
+
+interface Item {
+  quantity: number
+  unitPrice: number
+}
+interface InvoiceItem {
+  description: string
+  quantity: number
+  unitPrice: number
+}
+
+const calculateTotal = (items: Item[]): number =>
   items?.reduce(
     (sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0),
     0
   ) || 0
 
-export default async function InvoiceDetailPage({
-  params,
-}: {
-  params: { id: string }
+// --- แก้ไขที่นี่: เปลี่ยนเป็น Promise format ---
+export default async function InvoiceDetailPage(props: {
+  params: Promise<{ id: string }>
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
+  // Await params เพื่อดึงค่า id ออกมา
+  const params = await props.params
+  const { id } = params
+
   const supabase = await createClient()
   const { data: invoice, error } = await supabase
     .from("invoices")
     .select(`*, customers (*)`)
-    .eq("id", params.id)
+    .eq("id", id) // ใช้ id ที่ await มาแล้ว
     .single()
 
   if (error || !invoice) {
@@ -149,7 +164,7 @@ export default async function InvoiceDetailPage({
             </TableHeader>
             <TableBody>
               {invoice.items &&
-                invoice.items.map((item: any, index: number) => (
+                invoice.items.map((item: InvoiceItem, index: number) => (
                   <TableRow key={index}>
                     <TableCell className="font-medium">
                       {item.description}

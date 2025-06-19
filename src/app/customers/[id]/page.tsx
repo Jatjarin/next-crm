@@ -21,6 +21,24 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft } from "lucide-react"
 
+// --- 1. Type Definitions ---
+type InvoiceItem = {
+  description: string
+  quantity: number
+  unitPrice: number
+}
+
+type Invoice = {
+  id: number
+  customer_id: number
+  invoice_number: string
+  issue_date: string
+  due_date: string
+  items: InvoiceItem[]
+  status: string
+  created_at: string
+}
+
 // --- Helper Functions ---
 const formatDate = (dateString: string) =>
   new Date(dateString).toLocaleDateString("th-TH", {
@@ -28,7 +46,7 @@ const formatDate = (dateString: string) =>
     month: "short",
     day: "numeric",
   })
-const calculateTotal = (items: any[]): number =>
+const calculateTotal = (items: InvoiceItem[]): number =>
   items?.reduce(
     (sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0),
     0
@@ -47,14 +65,17 @@ const getStatusBadge = (status: string) => {
   }
 }
 
-export default async function CustomerDetailPage({
-  params,
-}: {
-  params: { id: string }
+// --- ลบ type definition ออกไปใช้ inline แทน ---
+export default async function CustomerDetailPage(props: {
+  params: Promise<{ id: string }>
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
+  // Await params เพื่อดึงค่า id ออกมา
+  const params = await props.params
+  const { id } = params
+
   const supabase = await createClient()
 
-  // แก้ไข Query: ให้ดึงข้อมูล invoices ที่เกี่ยวข้องมาด้วย
   const { data: customer, error } = await supabase
     .from("customers")
     .select(
@@ -63,7 +84,7 @@ export default async function CustomerDetailPage({
         invoices ( * )
     `
     )
-    .eq("id", params.id)
+    .eq("id", id)
     .single()
 
   if (error || !customer) {
@@ -71,10 +92,13 @@ export default async function CustomerDetailPage({
     notFound()
   }
 
-  // เรียงลำดับ Invoices จากใหม่ไปเก่า
+  // Type assertion เพื่อให้ TypeScript เข้าใจโครงสร้างที่ซ้อนกัน
+  const typedCustomer = customer as typeof customer & { invoices: Invoice[] }
+
+  // --- แก้ไขที่นี่: ระบุ Type ของ a และ b ให้ชัดเจน ---
   const sortedInvoices =
-    customer.invoices?.sort(
-      (a, b) =>
+    typedCustomer.invoices?.sort(
+      (a: Invoice, b: Invoice) =>
         new Date(b.issue_date).getTime() - new Date(a.issue_date).getTime()
     ) || []
 
@@ -89,12 +113,12 @@ export default async function CustomerDetailPage({
             <ArrowLeft className="w-4 h-4 mr-2" />
             กลับไปหน้ารายชื่อลูกค้า
           </Link>
-          <h1 className="text-3xl font-bold">{customer.name}</h1>
+          <h1 className="text-3xl font-bold">{typedCustomer.name}</h1>
           <p className="text-muted-foreground">
-            ผู้รับผิดชอบ: {customer.responsible_person || "-"}
+            ผู้รับผิดชอบ: {typedCustomer.responsible_person || "-"}
           </p>
         </div>
-        <DeleteButton customerId={customer.id} />
+        <DeleteButton customerId={typedCustomer.id} />
       </div>
 
       <Card>
@@ -110,25 +134,24 @@ export default async function CustomerDetailPage({
               <p className="font-medium text-gray-500">
                 เลขประจำตัวผู้เสียภาษี
               </p>
-              <p>{customer.tax_id || "-"}</p>
+              <p>{typedCustomer.tax_id || "-"}</p>
             </div>
             <div>
               <p className="font-medium text-gray-500">เบอร์โทร</p>
-              <p>{customer.phone || "-"}</p>
+              <p>{typedCustomer.phone || "-"}</p>
             </div>
             <div>
               <p className="font-medium text-gray-500">LINE ID</p>
-              <p>{customer.line_id || "-"}</p>
+              <p>{typedCustomer.line_id || "-"}</p>
             </div>
             <div className="md:col-span-2">
               <p className="font-medium text-gray-500">ที่อยู่</p>
-              <p>{customer.address || "-"}</p>
+              <p>{typedCustomer.address || "-"}</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* --- เพิ่มส่วนนี้เข้ามา --- */}
       <Card>
         <CardHeader>
           <CardTitle>ประวัติใบแจ้งหนี้</CardTitle>
@@ -148,7 +171,7 @@ export default async function CustomerDetailPage({
             </TableHeader>
             <TableBody>
               {sortedInvoices.length > 0 ? (
-                sortedInvoices.map((invoice) => (
+                sortedInvoices.map((invoice: Invoice) => (
                   <TableRow key={invoice.id}>
                     <TableCell className="font-medium">
                       <Link
@@ -185,7 +208,7 @@ export default async function CustomerDetailPage({
         </CardContent>
       </Card>
 
-      <EditForm customer={customer} />
+      <EditForm customer={typedCustomer} />
     </div>
   )
 }
