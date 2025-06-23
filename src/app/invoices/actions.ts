@@ -92,3 +92,73 @@ export async function updateInvoiceStatus(
 
   return { message: "Success" }
 }
+
+// --- เพิ่มฟังก์ชันนี้ ---
+// ฟังก์ชันสำหรับ "แก้ไข" เนื้อหาใบแจ้งหนี้
+export async function updateInvoice(invoiceId: number, formData: FormData) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return redirect("/login")
+
+  const itemsString = formData.get("items") as string
+  let items: InvoiceItem[]
+  try {
+    items = JSON.parse(itemsString)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (e) {
+    return redirect(
+      `/invoices/${invoiceId}/edit?message=Error: Invalid items data.`
+    )
+  }
+
+  const invoiceData = {
+    customer_id: Number(formData.get("customerId")),
+    invoice_number: formData.get("invoiceNumber") as string,
+    issue_date: formData.get("issueDate") as string,
+    due_date: formData.get("dueDate") as string,
+    items: items,
+  }
+
+  const { error } = await supabase
+    .from("invoices")
+    .update(invoiceData)
+    .eq("id", invoiceId)
+
+  if (error) {
+    console.error("Error updating invoice:", error)
+    return redirect(
+      `/invoices/${invoiceId}/edit?message=Error: Could not update invoice.`
+    )
+  }
+
+  await revalidatePath("/invoices")
+  await revalidatePath(`/invoices/${invoiceId}`)
+  await revalidatePath(`/customers/${invoiceData.customer_id}`)
+  await revalidatePath("/dashboard")
+
+  redirect(`/invoices/${invoiceId}`)
+}
+
+// --- เพิ่มฟังก์ชันนี้ ---
+// ฟังก์ชันสำหรับ "ลบ" ใบแจ้งหนี้
+export async function deleteInvoice(invoiceId: number) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return redirect("/login")
+
+  const { error } = await supabase.from("invoices").delete().eq("id", invoiceId)
+
+  if (error) {
+    console.error("Error deleting invoice:", error)
+    return redirect(`/invoices?message=Error: Could not delete invoice.`)
+  }
+
+  await revalidatePath("/invoices")
+  await revalidatePath("/dashboard")
+
+  redirect("/invoices")
+}

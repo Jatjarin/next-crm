@@ -8,14 +8,24 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
-// บังคับให้หน้านี้เป็น Dynamic Rendering เสมอ (ไม่ใช้ Cache)
+// บังคับให้หน้านี้ดึงข้อมูลใหม่เสมอเมื่อถูกเปิด (ไม่ใช้ Cache)
+// ซึ่งสำคัญมากสำหรับหน้ารายงาน
 export const dynamic = "force-dynamic"
 
-interface Item {
+// 1. กำหนด Type ที่ถูกต้อง
+type InvoiceItem = {
+  description: string
   quantity: number
   unitPrice: number
 }
-const calculateTotal = (items: Item[]): number =>
+
+type PaidInvoice = {
+  items: InvoiceItem[]
+  issue_date: string
+}
+
+// Helper function
+const calculateTotal = (items: InvoiceItem[]): number =>
   items?.reduce(
     (sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0),
     0
@@ -25,6 +35,7 @@ export default async function ReportsPage() {
   const supabase = await createClient()
   const currentYear = new Date().getFullYear()
 
+  // 2. ดึงข้อมูลเฉพาะ Invoice ที่ชำระแล้ว (Paid) ในปีปัจจุบัน
   const { data: invoices, error } = await supabase
     .from("invoices")
     .select("items, issue_date")
@@ -33,15 +44,25 @@ export default async function ReportsPage() {
     .lte("issue_date", `${currentYear}-12-31`)
 
   if (error) {
-    return <p className="p-8">เกิดข้อผิดพลาดในการโหลดข้อมูลสำหรับรายงาน</p>
+    return (
+      <p className="p-8">
+        เกิดข้อผิดพลาดในการโหลดข้อมูลสำหรับรายงาน: {error.message}
+      </p>
+    )
   }
 
-  const monthlySales = Array(12).fill(0)
-  invoices.forEach((invoice) => {
-    const month = new Date(invoice.issue_date).getMonth()
+  // 3. ประมวลผลข้อมูลเพื่อสร้างยอดขายรายเดือน
+  const monthlySales = Array(12).fill(0) // สร้าง Array 12 ช่องสำหรับแต่ละเดือน
+
+  // Cast invoices to the correct type
+  const typedInvoices = (invoices || []) as PaidInvoice[]
+
+  typedInvoices.forEach((invoice) => {
+    const month = new Date(invoice.issue_date).getMonth() // getMonth() จะได้ค่า 0-11
     monthlySales[month] += calculateTotal(invoice.items)
   })
 
+  // 4. หายอดขายสูงสุดเพื่อใช้ในการคำนวณความสูงของแท่งกราฟ
   const maxSales = Math.max(...monthlySales)
   const monthLabels = [
     "ม.ค.",

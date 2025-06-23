@@ -3,6 +3,8 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import UpdateStatusButton from "./UpdateStatusButton"
+import { deleteInvoice } from "../actions"
+import { Button } from "@/components/ui/button"
 // import PrintButton from "./PrintButton"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import {
@@ -13,8 +15,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Pencil, Trash2 } from "lucide-react"
 
 // Helper functions
 const getStatusBadge = (status: string) => {
@@ -37,17 +50,18 @@ const formatDate = (dateString: string) =>
     day: "numeric",
   })
 
-interface Item {
-  quantity: number
-  unitPrice: number
-}
+// interface Item {
+//   quantity: number
+//   unitPrice: number
+// }
 interface InvoiceItem {
   description: string
   quantity: number
   unitPrice: number
 }
 
-const calculateTotal = (items: Item[]): number =>
+// This function now calculates the total price based on VAT-inclusive unit prices.
+const calculateGrandTotal = (items: InvoiceItem[]): number =>
   items?.reduce(
     (sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0),
     0
@@ -73,9 +87,16 @@ export default async function InvoiceDetailPage(props: {
     notFound()
   }
 
-  const subTotal = calculateTotal(invoice.items)
-  const vat = subTotal * 0.07
-  const grandTotal = subTotal + vat
+  // --- แก้ไข Logic การคำนวณราคาที่นี่ ---
+  // 1. ยอดรวมทั้งสิ้น คือผลรวมของ (จำนวน * ราคาที่รวม VAT แล้ว)
+  const grandTotal = calculateGrandTotal(invoice.items)
+  // 2. คำนวณย้อนกลับเพื่อหายอดก่อนภาษี
+  const subTotal = grandTotal / 1.07
+  // 3. คำนวณภาษีจากส่วนต่าง
+  const vat = grandTotal - subTotal
+
+  // ผูก ID กับฟังก์ชันล่วงหน้า
+  const deleteInvoiceWithId = deleteInvoice.bind(null, invoice.id)
 
   return (
     <div className="p-8">
@@ -94,6 +115,41 @@ export default async function InvoiceDetailPage(props: {
         </div>
         <div className="flex items-center gap-2">
           {/* <PrintButton invoiceNumber={invoice.invoice_number} /> */}
+          {/* ปุ่มแก้ไข */}
+          <Button asChild variant="outline">
+            <Link href={`/invoices/${invoice.id}/edit`}>
+              <Pencil size={16} className="mr-2" /> แก้ไข
+            </Link>
+          </Button>
+
+          {/* ปุ่มลบ */}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive">
+                <Trash2 size={16} className="mr-2" />
+                ลบ
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <form action={deleteInvoiceWithId}>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>คุณแน่ใจหรือไม่?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    การกระทำนี้ไม่สามารถย้อนกลับได้
+                    ระบบจะทำการลบใบแจ้งหนี้นี้อย่างถาวร
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel type="button">ยกเลิก</AlertDialogCancel>
+                  <AlertDialogAction asChild>
+                    <Button type="submit" variant="destructive">
+                      ยืนยันการลบ
+                    </Button>
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </form>
+            </AlertDialogContent>
+          </AlertDialog>
           <UpdateStatusButton
             invoiceId={invoice.id}
             currentStatus={invoice.status}
@@ -189,29 +245,32 @@ export default async function InvoiceDetailPage(props: {
 
           <div className="flex justify-end mt-4">
             <div className="w-full max-w-sm space-y-2">
-              <div className="flex justify-between">
-                <span>ยอดรวม</span>
-                <span>
-                  ฿
-                  {subTotal.toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                  })}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>VAT (7%)</span>
-                <span>
-                  ฿{vat.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-              <div className="flex justify-between font-bold text-lg border-t pt-2">
-                <span>ยอดรวมทั้งสิ้น</span>
-                <span>
-                  ฿
-                  {grandTotal.toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                  })}
-                </span>
+              <div className="w-full max-w-sm space-y-2">
+                {/* --- แก้ไขป้ายกำกับที่นี่ --- */}
+                <div className="flex justify-between">
+                  <span>ยอดรวมก่อนภาษี</span>
+                  <span>
+                    ฿
+                    {subTotal.toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                    })}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>ภาษีมูลค่าเพิ่ม (7%)</span>
+                  <span>
+                    ฿{vat.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="flex justify-between font-bold text-lg border-t pt-2">
+                  <span>ยอดรวมทั้งสิ้น</span>
+                  <span>
+                    ฿
+                    {grandTotal.toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                    })}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
