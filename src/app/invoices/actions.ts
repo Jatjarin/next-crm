@@ -12,29 +12,31 @@ type InvoiceItem = {
 
 export async function addInvoice(formData: FormData) {
   const supabase = await createClient()
-
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) {
-    return redirect("/login")
+  if (!user) return redirect("/login")
+
+  const customerId = formData.get("customerId")
+  if (!customerId) {
+    return redirect("/invoices/new?message=Error: Please select a customer.")
   }
 
   const itemsString = formData.get("items") as string
   let items: InvoiceItem[]
   try {
     items = JSON.parse(itemsString)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (e) {
-    console.error("Error parsing items JSON:", e)
     return redirect("/invoices/new?message=Error: Invalid items data.")
   }
 
   const invoiceData = {
-    customer_id: Number(formData.get("customerId")),
+    customer_id: Number(customerId),
     invoice_number: formData.get("invoiceNumber") as string,
     issue_date: formData.get("issueDate") as string,
     due_date: formData.get("dueDate") as string,
-    status: formData.get("status") as string,
+    status: "Draft",
     items: items,
   }
 
@@ -51,10 +53,8 @@ export async function addInvoice(formData: FormData) {
 
   await revalidatePath("/invoices")
   await revalidatePath("/dashboard")
-  if (invoiceData.customer_id) {
-    await revalidatePath(`/customers/${invoiceData.customer_id}`)
-  }
-  await revalidatePath("/reports")
+  await revalidatePath(`/customers/${invoiceData.customer_id}`)
+
   redirect(`/invoices/${data.id}`)
 }
 
@@ -63,45 +63,32 @@ export async function updateInvoiceStatus(
   newStatus: string
 ) {
   const supabase = await createClient()
-
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) {
-    return { message: "Authentication required" }
-  }
+  if (!user) return { message: "Authentication required" }
 
-  const { data: invoice, error: fetchError } = await supabase
+  const { data: invoice } = await supabase
     .from("invoices")
     .select("customer_id")
     .eq("id", invoiceId)
     .single()
 
-  if (fetchError || !invoice) {
-    console.error("Error fetching invoice for revalidation:", fetchError)
-    return { message: "Error: Invoice not found." }
-  }
-
   const { error } = await supabase
     .from("invoices")
     .update({ status: newStatus })
     .eq("id", invoiceId)
+  if (error) return { message: "Error updating status." }
 
-  if (error) {
-    console.error("Error updating invoice status:", error)
-    return { message: "Error: Could not update status." }
-  }
+  await Promise.all([
+    revalidatePath("/reports"),
+    revalidatePath("/invoices"),
+    revalidatePath(`/invoices/${invoiceId}`),
+    revalidatePath("/dashboard"),
+    invoice?.customer_id
+      ? revalidatePath(`/customers/${invoice.customer_id}`)
+      : Promise.resolve(),
+  ])
 
-  // Revalidate path ที่เกี่ยวข้องทั้งหมด
-  await revalidatePath("/reports")
-  await revalidatePath("/invoices")
-  await revalidatePath(`/invoices/${invoiceId}`)
-  if (invoice.customer_id) {
-    await revalidatePath(`/customers/${invoice.customer_id}`)
-  }
-  await revalidatePath("/dashboard")
-
-  // --- แก้ไขที่นี่: เอา redirect ออก ---
-  // และ return ข้อความกลับไปให้ Client จัดการต่อ
   return { message: "Success" }
 }

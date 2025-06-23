@@ -29,14 +29,14 @@ type CustomerInfo = {
   name: string
 }
 
-type InvoiceWithCustomer = {
+interface InvoiceWithCustomer {
   id: number
   invoice_number: string
+  issue_date: string
   items: InvoiceItem[]
   status: string
-  issue_date: string
-  // กำหนดให้ customers เป็น Array ของข้อมูลลูกค้า
-  customers: CustomerInfo[] | null
+  // ความสัมพันธ์แบบ to-one ที่ถูกต้องคือ Object หรือ null
+  customers: CustomerInfo | null
 }
 
 interface Item {
@@ -76,7 +76,7 @@ export default async function DashboardPage() {
     supabase
       .from("invoices")
       .select(
-        "id, invoice_number, items, status, issue_date, customers ( name )"
+        "id, invoice_number, items, status, issue_date, customers!inner ( name )"
       )
       .order("issue_date", { ascending: false }),
   ])
@@ -88,9 +88,8 @@ export default async function DashboardPage() {
     return <p className="p-8">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>
   }
 
-  // Cast ข้อมูลให้เป็น Type ที่เรากำหนด
-  const typedInvoices = ((invoices as InvoiceWithCustomer[]) ||
-    []) as InvoiceWithCustomer[]
+  // แก้ไข: ใช้ unknown เพื่อหลีกเลี่ยง TypeScript error
+  const typedInvoices = (invoices || []) as unknown as InvoiceWithCustomer[]
 
   const totalRevenue = typedInvoices
     .filter((inv) => inv.status === "Paid")
@@ -186,7 +185,9 @@ export default async function DashboardPage() {
                     </Link>
                   </TableCell>
                   {/* --- แก้ไขที่นี่: เข้าถึงสมาชิกตัวแรกของ Array --- */}
-                  <TableCell>{invoice.customers?.[0]?.name || "N/A"}</TableCell>
+                  <TableCell>
+                    {invoice.customers?.name || "ไม่ระบุลูกค้า"}
+                  </TableCell>
                   <TableCell>{formatDate(invoice.issue_date)}</TableCell>
                   <TableCell className="text-right">
                     ฿

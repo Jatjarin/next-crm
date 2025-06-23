@@ -19,29 +19,28 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 
-// 1. สร้าง Type สำหรับรายการสินค้า
+// 1. กำหนด Type ที่ถูกต้องและสมบูรณ์
 type InvoiceItem = {
   description: string
   quantity: number
   unitPrice: number
 }
 
-// 2. สร้าง Type สำหรับข้อมูลลูกค้า
 type CustomerInfo = {
   name: string
 }
 
-// 3. อัปเดต Type หลักของ Invoice ให้ถูกต้องตาม Error ที่เกิดขึ้น
-type InvoiceWithCustomer = {
+interface InvoiceWithCustomer {
   id: number
   invoice_number: string
   issue_date: string
   items: InvoiceItem[]
   status: string
-  // --- แก้ไขที่นี่: กำหนดให้ customers เป็น Array ของข้อมูลลูกค้า ---
-  customers: CustomerInfo[] | null
+  // ความสัมพันธ์แบบ to-one ที่ถูกต้องคือ Object หรือ null
+  customers: CustomerInfo | null
 }
 
+// Helper Functions
 const getStatusBadge = (status: string) => {
   switch (status) {
     case "Paid":
@@ -62,6 +61,7 @@ const formatDate = (dateString: string) =>
     month: "short",
     day: "numeric",
   })
+
 const calculateTotal = (items: InvoiceItem[]): number =>
   items?.reduce(
     (sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0),
@@ -75,22 +75,22 @@ export default async function InvoicesPage() {
     .from("invoices")
     .select(
       `
-            id,
-            invoice_number,
-            issue_date,
-            items,
-            status,
-            customers ( name )
-        `
+      id,
+      invoice_number,
+      issue_date,
+      items,
+      status,
+      customers!left(name)
+    `
     )
     .order("issue_date", { ascending: false })
 
   if (error) {
-    return <p className="p-8">เกิดข้อผิดพลาดในการโหลดข้อมูลใบแจ้งหนี้</p>
+    return <p className="p-8">เกิดข้อผิดพลาดในการโหลดข้อมูล: {error.message}</p>
   }
 
-  // Cast ข้อมูลที่ได้มาให้เป็น Type ที่เรากำหนดไว้อย่างชัดเจน
-  const typedInvoices: InvoiceWithCustomer[] = invoices || []
+  // แก้ไข: ใช้ unknown เพื่อหลีกเลี่ยง TypeScript error
+  const typedInvoices = (invoices || []) as unknown as InvoiceWithCustomer[]
 
   return (
     <div className="p-8">
@@ -122,30 +122,39 @@ export default async function InvoicesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {typedInvoices.map((invoice) => (
-                <TableRow key={invoice.id}>
-                  <TableCell className="font-medium">
-                    <Link
-                      href={`/invoices/${invoice.id}`}
-                      className="text-blue-600 hover:underline"
-                    >
-                      {invoice.invoice_number}
-                    </Link>
-                  </TableCell>
-                  {/* --- แก้ไขที่นี่: เข้าถึงชื่อลูกค้าจาก "สมาชิกตัวแรก" ของ Array --- */}
-                  <TableCell>{invoice.customers?.[0]?.name || "N/A"}</TableCell>
-                  <TableCell>{formatDate(invoice.issue_date)}</TableCell>
-                  <TableCell className="text-right">
-                    ฿
-                    {calculateTotal(invoice.items).toLocaleString("en-US", {
-                      minimumFractionDigits: 2,
-                    })}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {getStatusBadge(invoice.status)}
+              {typedInvoices.length > 0 ? (
+                typedInvoices.map((invoice) => (
+                  <TableRow key={invoice.id}>
+                    <TableCell className="font-medium">
+                      <Link
+                        href={`/invoices/${invoice.id}`}
+                        className="text-blue-600 hover:underline"
+                      >
+                        {invoice.invoice_number}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      {invoice.customers?.name || "ไม่ระบุลูกค้า"}
+                    </TableCell>
+                    <TableCell>{formatDate(invoice.issue_date)}</TableCell>
+                    <TableCell className="text-right">
+                      ฿
+                      {calculateTotal(invoice.items).toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                      })}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {getStatusBadge(invoice.status)}
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-gray-500">
+                    ไม่มีข้อมูลใบแจ้งหนี้
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>
