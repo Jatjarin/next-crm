@@ -142,3 +142,41 @@
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+  /* ซ่อนทุกอย่างในหน้าเว็บโดยปริยาย */
+  body * {
+    visibility: hidden;
+  }
+
+  /* แสดงเฉพาะส่วนที่ต้องการพิมพ์และองค์ประกอบข้างใน */
+  #printable-area,
+  #printable-area * {
+    visibility: visible;
+  }
+
+  /* จัดวางส่วนที่พิมพ์ให้อยู่มุมบนซ้ายและเต็มหน้ากระดาษ */
+  #printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: auto;
+    padding: 1.5cm !important;
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+  }
+
+  /* ซ่อนองค์ประกอบที่ไม่ต้องการให้พิมพ์ */
+  .no-print {
+    display: none !important;
+  }
+
+  /* ทำให้พื้นหลังเป็นสีขาวล้วน */
+  body,
+  .p-8 {
+    background-color: #fff !important;
+    padding: 0 !important;
+  }
+}

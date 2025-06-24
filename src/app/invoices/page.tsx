@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import Link from "next/link"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
+//import PrintButton from "./PrintButton" // 1. Import ปุ่มพิมพ์เข้ามา
 import {
   Card,
   CardContent,
@@ -94,7 +95,7 @@ export default async function InvoicesPage() {
 
   return (
     <div className="p-8">
-      <div className="flex justify-between items-center mb-6">
+      <div className="no-print flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">ใบแจ้งหนี้</h1>
         <Button asChild>
           <Link href="/invoices/new">
