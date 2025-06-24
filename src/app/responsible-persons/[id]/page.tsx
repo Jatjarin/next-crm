@@ -6,19 +6,24 @@ import DeleteButton from "./DeleteButton"
 import {
   Card,
   CardContent,
-  CardDescription,
+  //CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
 import { ArrowLeft } from "lucide-react"
 
-type Props = {
-  params: { id: string }
-}
+// type Props = {
+//   params: { id: string }
+// }
 
-export default async function ResponsiblePersonDetailPage(props: Props) {
+export default async function ResponsiblePersonDetailPage(props: {
+  params: Promise<{ id: string }>
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
+  // Await params เพื่อดึงค่า id ออกมา
   const params = await props.params
   const { id } = params
+
   const supabase = await createClient()
   const { data: person, error } = await supabase
     .from("responsible_persons")
