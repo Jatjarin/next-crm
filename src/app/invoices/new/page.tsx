@@ -1,11 +1,11 @@
 "use client"
 
+import * as React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { addInvoice } from "../actions"
-import { Plus, Trash2, Check, ChevronsUpDown } from "lucide-react"
-
+import { Plus, Trash2, Check, ChevronsUpDown, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-
 import {
   Popover,
   PopoverContent,
@@ -31,45 +30,56 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
-
 import { cn } from "@/lib/utils"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
-type Product = { id: number; name: string; price: number }
+// Type Definitions
 type Customer = { id: number; name: string }
+type Product = { id: number; name: string; price: number }
+type ResponsiblePerson = { id: number; name: string }
 type InvoiceItem = { description: string; quantity: number; unitPrice: number }
 
 export default function NewInvoicePage() {
   const router = useRouter()
   const supabase = createClient()
   const [customers, setCustomers] = useState<Customer[]>([])
-  const [products, setProducts] = useState<Product[]>([]) // State สำหรับเก็บรายการสินค้า
+  const [products, setProducts] = useState<Product[]>([])
+  const [responsiblePersons, setResponsiblePersons] = useState<
+    ResponsiblePerson[]
+  >([]) // State ใหม่
   const [items, setItems] = useState<InvoiceItem[]>([
     { description: "", quantity: 1, unitPrice: 0 },
   ])
   const [selectedCustomerId, setSelectedCustomerId] = useState("")
+  const [selectedResponsiblePersonId, setSelectedResponsiblePersonId] =
+    useState("") // State ใหม่
 
-  // State สำหรับ Combobox
   const [openCustomerCombobox, setOpenCustomerCombobox] = useState(false)
-  const [openProductComboboxes, setOpenProductComboboxes] = useState<{
-    [key: number]: boolean
-  }>({})
+  const [isPending, startTransition] = React.useTransition()
 
   useEffect(() => {
-    // 2. ดึงข้อมูลทั้งลูกค้าและสินค้าพร้อมกัน
     const fetchData = async () => {
-      const { data: customerData } = await supabase
-        .from("customers")
-        .select("id, name")
-      if (customerData) setCustomers(customerData)
+      // ดึงข้อมูลทั้ง 3 ส่วนพร้อมกัน
+      const [customerRes, productRes, personRes] = await Promise.all([
+        supabase.from("customers").select("id, name").order("name"),
+        supabase.from("products").select("id, name, price").order("name"),
+        supabase.from("responsible_persons").select("id, name").order("name"),
+      ])
 
-      const { data: productData } = await supabase
-        .from("products")
-        .select("id, name, price")
-      if (productData) setProducts(productData)
+      if (customerRes.data) setCustomers(customerRes.data)
+      if (productRes.data) setProducts(productRes.data)
+      if (personRes.data) setResponsiblePersons(personRes.data)
     }
     fetchData()
   }, [supabase])
 
+  // ... โค้ด Logic เดิม ...
   const handleItemChange = (
     index: number,
     field: keyof InvoiceItem,
@@ -84,18 +94,14 @@ export default function NewInvoicePage() {
     setItems(newItems)
   }
 
-  // 3. ฟังก์ชันใหม่สำหรับจัดการเมื่อมีการเลือกสินค้า
-  const handleProductSelect = (index: number, productId: string) => {
-    const selectedProduct = products.find((p) => p.id === Number(productId))
-    if (selectedProduct) {
-      const newItems = [...items]
-      newItems[index] = {
-        ...newItems[index],
-        description: selectedProduct.name,
-        unitPrice: selectedProduct.price,
-      }
-      setItems(newItems)
+  const handleProductSelect = (index: number, product: Product) => {
+    const newItems = [...items]
+    newItems[index] = {
+      ...newItems[index],
+      description: product.name,
+      unitPrice: product.price,
     }
+    setItems(newItems)
   }
 
   const addItem = () =>
@@ -103,7 +109,6 @@ export default function NewInvoicePage() {
   const removeItem = (index: number) =>
     setItems(items.filter((_, i) => i !== index))
 
-  // Logic การคำนวณราคา (ราคาที่ใส่คือราคารวม VAT แล้ว)
   const grandTotal = items.reduce(
     (sum, item) => sum + item.quantity * item.unitPrice,
     0
@@ -114,21 +119,24 @@ export default function NewInvoicePage() {
   return (
     <div className="p-8">
       <h1 className="text-3xl font-bold mb-6">สร้างใบแจ้งหนี้ใหม่</h1>
-      <form action={addInvoice}>
-        {/* Input ที่ซ่อนไว้เพื่อส่ง ID ของลูกค้าไปกับฟอร์ม */}
+      <form action={(formData) => startTransition(() => addInvoice(formData))}>
         <input type="hidden" name="customerId" value={selectedCustomerId} />
+        <input
+          type="hidden"
+          name="responsiblePersonId"
+          value={selectedResponsiblePersonId}
+        />{" "}
+        {/* เพิ่ม input ที่ซ่อนไว้ */}
+        <input type="hidden" name="items" value={JSON.stringify(items)} />
         <Card>
           <CardHeader>
             <CardTitle>ข้อมูลใบแจ้งหนี้</CardTitle>
-            <CardDescription>
-              กรอกข้อมูลลูกค้าและรายละเอียดของใบแจ้งหนี้
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Combobox ลูกค้า */}
               <div className="space-y-2">
-                <Label htmlFor="customerId">ลูกค้า</Label>
-                {/* --- เปลี่ยนมาใช้ Combobox ที่นี่ --- */}
+                <Label>ลูกค้า</Label>
                 <Popover
                   open={openCustomerCombobox}
                   onOpenChange={setOpenCustomerCombobox}
@@ -137,13 +145,11 @@ export default function NewInvoicePage() {
                     <Button
                       variant="outline"
                       role="combobox"
-                      aria-expanded={openCustomerCombobox}
                       className="w-full justify-between"
                     >
                       {selectedCustomerId
                         ? customers.find(
-                            (customer) =>
-                              String(customer.id) === selectedCustomerId
+                            (c) => String(c.id) === selectedCustomerId
                           )?.name
                         : "-- เลือกลูกค้า --"}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -155,24 +161,24 @@ export default function NewInvoicePage() {
                       <CommandList>
                         <CommandEmpty>ไม่พบลูกค้า</CommandEmpty>
                         <CommandGroup>
-                          {customers.map((customer) => (
+                          {customers.map((c) => (
                             <CommandItem
-                              key={customer.id}
-                              value={customer.name}
+                              key={c.id}
+                              value={c.name}
                               onSelect={() => {
-                                setSelectedCustomerId(String(customer.id))
+                                setSelectedCustomerId(String(c.id))
                                 setOpenCustomerCombobox(false)
                               }}
                             >
                               <Check
                                 className={cn(
                                   "mr-2 h-4 w-4",
-                                  selectedCustomerId === String(customer.id)
+                                  selectedCustomerId === String(c.id)
                                     ? "opacity-100"
                                     : "opacity-0"
                                 )}
                               />
-                              {customer.name}
+                              {c.name}
                             </CommandItem>
                           ))}
                         </CommandGroup>
@@ -180,6 +186,27 @@ export default function NewInvoicePage() {
                     </Command>
                   </PopoverContent>
                 </Popover>
+              </div>
+
+              {/* --- เพิ่มเมนูเลือกผู้รับผิดชอบที่นี่ --- */}
+              <div className="space-y-2">
+                <Label>ผู้รับผิดชอบ</Label>
+                <Select
+                  required
+                  value={selectedResponsiblePersonId}
+                  onValueChange={setSelectedResponsiblePersonId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="-- เลือกผู้รับผิดชอบ --" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {responsiblePersons.map((p) => (
+                      <SelectItem key={p.id} value={String(p.id)}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               {/* ... Input fields อื่นๆ ... */}
               <div className="space-y-2">
@@ -206,66 +233,39 @@ export default function NewInvoicePage() {
                 <Input type="date" id="dueDate" name="dueDate" required />
               </div>
             </div>
-
+            {/* ... ส่วนรายการสินค้าและยอดรวม ... */}
             <div className="border-t pt-6">
               <h3 className="text-lg font-semibold mb-4">
                 รายการสินค้า/บริการ
               </h3>
-              <input type="hidden" name="items" value={JSON.stringify(items)} />
-
               <div className="space-y-2">
                 {items.map((item, index) => (
                   <div
                     key={index}
                     className="flex flex-col md:flex-row items-center gap-2"
                   >
-                    {/* --- 4. เพิ่มเมนูเลือกสินค้าที่นี่ --- */}
-                    <Popover
-                      open={openProductComboboxes[index] || false}
-                      onOpenChange={(open) =>
-                        setOpenProductComboboxes((prev) => ({
-                          ...prev,
-                          [index]: open,
-                        }))
-                      }
-                    >
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          className="w-full md:w-1/3 justify-between"
-                        >
-                          {item.description || "-- เลือกสินค้า --"}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                        <Command>
-                          <CommandInput placeholder="ค้นหาสินค้า..." />
-                          <CommandList>
-                            <CommandEmpty>ไม่พบสินค้า</CommandEmpty>
-                            <CommandGroup>
-                              {products.map((product) => (
-                                <CommandItem
-                                  key={product.id}
-                                  value={product.name}
-                                  onSelect={() =>
-                                    handleProductSelect(
-                                      index,
-                                      String(product.id)
-                                    )
-                                  }
-                                >
-                                  {product.name}
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-
-                    {/* Input นี้สำหรับแก้ไขคำอธิบายได้เอง */}
+                    <div className="w-full md:w-1/3">
+                      <Select
+                        onValueChange={(productId) => {
+                          const selectedProduct = products.find(
+                            (p) => p.id === Number(productId)
+                          )
+                          if (selectedProduct)
+                            handleProductSelect(index, selectedProduct)
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="-- เลือกสินค้า --" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {products.map((p) => (
+                            <SelectItem key={p.id} value={String(p.id)}>
+                              {p.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <Input
                       type="text"
                       placeholder="หรือพิมพ์คำอธิบายเอง"
@@ -275,7 +275,6 @@ export default function NewInvoicePage() {
                       }
                       className="flex-grow"
                     />
-
                     <Input
                       type="number"
                       placeholder="จำนวน"
@@ -287,7 +286,7 @@ export default function NewInvoicePage() {
                     />
                     <Input
                       type="number"
-                      placeholder="ราคา/หน่วย"
+                      placeholder="ราคา/หน่วย (รวม VAT)"
                       value={item.unitPrice}
                       onChange={(e) =>
                         handleItemChange(index, "unitPrice", e.target.value)
@@ -316,7 +315,6 @@ export default function NewInvoicePage() {
                 เพิ่มรายการ
               </Button>
             </div>
-
             <div className="flex justify-end mt-4">
               <div className="w-full max-w-xs space-y-2">
                 <div className="flex justify-between">
@@ -347,11 +345,13 @@ export default function NewInvoicePage() {
             </div>
           </CardContent>
           <CardFooter className="flex justify-end gap-2">
-            <input type="hidden" name="status" value="Draft" />
             <Button type="button" variant="ghost" onClick={() => router.back()}>
               ยกเลิก
             </Button>
-            <Button type="submit">บันทึกฉบับร่าง</Button>
+            <Button type="submit" disabled={isPending}>
+              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              บันทึกฉบับร่าง
+            </Button>
           </CardFooter>
         </Card>
       </form>

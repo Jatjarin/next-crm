@@ -25,6 +25,7 @@ type Customer = {
   tax_id: string | null
   responsible_person: string | null
 }
+type ResponsiblePerson = { name: string }
 type InvoiceItem = {
   description: string
   quantity: number
@@ -38,6 +39,7 @@ type Invoice = {
   items: InvoiceItem[]
   status: string
   customers: Customer | null
+  responsible_persons: ResponsiblePerson | null // เพิ่ม Type
 }
 // type Props = {
 //   params: { id: string }
@@ -80,7 +82,7 @@ export default async function InvoiceDetailPage(props: {
   const supabase = await createClient()
   const { data: invoiceData, error } = await supabase
     .from("invoices")
-    .select(`*, customers!left(*)`)
+    .select(`*, customers!left(*),responsible_persons!left(name)`)
     .eq("id", id)
     .single()
 
@@ -184,7 +186,7 @@ export default async function InvoiceDetailPage(props: {
               เลขประจำตัวผู้เสียภาษี: {invoice.customers?.tax_id || "-"}
             </p>
             <p className="text-sm text-muted-foreground customer-responsible-person">
-              ผู้รับผิดชอบ: {invoice.customers?.responsible_person || "-"}
+              ผู้รับผิดชอบ: {invoice.responsible_persons?.name || "-"}
             </p>
           </div>
         </section>

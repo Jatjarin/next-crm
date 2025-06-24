@@ -9,6 +9,7 @@ import {
   BarChart2,
   LogOut,
   Package,
+  UserCheck,
 } from "lucide-react"
 import { logout } from "./actions"
 import { Button } from "@/components/ui/button"
@@ -20,6 +21,7 @@ const navItems = [
   { href: "/customers", label: "ลูกค้า", icon: Users },
   { href: "/invoices", label: "ใบแจ้งหนี้", icon: FileText },
   { href: "/products", label: "สินค้า", icon: Package },
+  { href: "/responsible-persons", label: "ผู้รับผิดชอบ", icon: UserCheck },
   { href: "/reports", label: "รายงาน", icon: BarChart2 },
 ]
 

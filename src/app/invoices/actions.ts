@@ -33,6 +33,8 @@ export async function addInvoice(formData: FormData) {
 
   const invoiceData = {
     customer_id: Number(customerId),
+    // --- เพิ่มข้อมูลผู้รับผิดชอบ ---
+    responsible_person_id: Number(formData.get("responsiblePersonId")),
     invoice_number: formData.get("invoiceNumber") as string,
     issue_date: formData.get("issueDate") as string,
     due_date: formData.get("dueDate") as string,
@@ -115,6 +117,8 @@ export async function updateInvoice(invoiceId: number, formData: FormData) {
 
   const invoiceData = {
     customer_id: Number(formData.get("customerId")),
+    // --- เพิ่มข้อมูลผู้รับผิดชอบ ---
+    responsible_person_id: Number(formData.get("responsiblePersonId")),
     invoice_number: formData.get("invoiceNumber") as string,
     issue_date: formData.get("issueDate") as string,
     due_date: formData.get("dueDate") as string,

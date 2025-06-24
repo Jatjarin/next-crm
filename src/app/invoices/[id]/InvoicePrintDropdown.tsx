@@ -23,7 +23,9 @@ export default function InvoicePrintDropdown({ invoiceNumber }: Props) {
     type: "Original" | "Copy"
   ) => {
     // ดึงข้อมูลจากองค์ประกอบต่างๆ โดยใช้ className ที่เรากำหนดไว้
-    const logoSrc = element.querySelector("img")?.src || ""
+    //const logoSrc = element.querySelector("img")?.src || ""
+    const logoPath = "/logo512.png" // ที่อยู่ของไฟล์โลโก้ในโฟลเดอร์ public
+    const logoUrl = `${window.location.origin}${logoPath}`
     const companyName = element.querySelector("h2")?.textContent || ""
     const companyAddress = element.querySelector("h2 + p")?.textContent || ""
     const invoiceTitle =
@@ -78,11 +80,7 @@ export default function InvoicePrintDropdown({ invoiceNumber }: Props) {
     return `
             <header>
                 <div class="company-info">
-                    ${
-                      logoSrc
-                        ? `<img src="${logoSrc}" alt="Logo" style="width: 100px; margin-bottom: 1rem;" />`
-                        : ""
-                    }
+                    <img src="${logoUrl}" alt="Logo" style="width: 100px; height: 100px; margin-bottom: 1rem;" />
                     <h2>${companyName}</h2>
                     <p>${companyAddress}</p>
                 </div>
