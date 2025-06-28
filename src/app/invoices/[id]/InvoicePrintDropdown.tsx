@@ -23,9 +23,7 @@ export default function InvoicePrintDropdown({ invoiceNumber }: Props) {
     type: "Original" | "Copy"
   ) => {
     // ดึงข้อมูลจากองค์ประกอบต่างๆ โดยใช้ className ที่เรากำหนดไว้
-    //const logoSrc = element.querySelector("img")?.src || ""
-    const logoPath = "/logo512.png" // ที่อยู่ของไฟล์โลโก้ในโฟลเดอร์ public
-    const logoUrl = `${window.location.origin}${logoPath}`
+    const logoSrc = element.querySelector("img")?.src || ""
     const companyName = element.querySelector("h2")?.textContent || ""
     const companyAddress = element.querySelector("h2 + p")?.textContent || ""
     const invoiceTitle =
@@ -55,6 +53,7 @@ export default function InvoicePrintDropdown({ invoiceNumber }: Props) {
     const tableRows = Array.from(element.querySelectorAll("tbody tr"))
       .map((row) => {
         const cells = row.querySelectorAll("td")
+        if (cells.length < 4) return ""
         return `<tr><td>${cells[0].textContent}</td><td class="text-center">${cells[1].textContent}</td><td class="text-right">${cells[2].textContent}</td><td class="text-right">${cells[3].textContent}</td></tr>`
       })
       .join("")
@@ -78,23 +77,20 @@ export default function InvoicePrintDropdown({ invoiceNumber }: Props) {
 
     // สร้างโครงสร้าง HTML สำหรับหน้าพิมพ์ทั้งหมด
     return `
-            <header>
+            <header class="header">
                 <div class="company-info">
-                    <img src="${logoUrl}" alt="Logo" style="width: 100px; height: 100px; margin-bottom: 1rem;" />
+                    ${
+                      logoSrc
+                        ? `<img src="${logoSrc}" alt="Logo" style="width: 100px; margin-bottom: 1rem;" />`
+                        : ""
+                    }
                     <h2>${companyName}</h2>
                     <p>${companyAddress}</p>
                 </div>
                 <div class="invoice-title">
                     <h1>${invoiceTitle}</h1>
-                    <span>${invoiceNumberText}</span>
+                    <p>${invoiceNumberText}</p>
                     <p class="print-type">${typeText}</p>
-                    <div class="invoice-meta">
-                     <div class="detail-grid">
-                        <span class="label">วันที่ออก:</span><span class="value">${issueDateText}</span>
-                        <span class="label">ครบกำหนดชำระ:</span><span class="value">${dueDateText}</span>
-                        <span class="label">สถานะ:</span><span class="value">${statusBadgeHTML}</span>
-                    </div>
-                </div>
                 </div>
             </header>
 
@@ -108,14 +104,24 @@ export default function InvoicePrintDropdown({ invoiceNumber }: Props) {
                         }:</span><span class="value">${
       customerTaxId.split(":")[1]?.trim() || "-"
     }</span>
-                        <span class="label">${
-                          customerResponsiblePerson.split(":")[0]
-                        }:</span><span class="value">${
+                    </div>
+                </div>
+                <div class="invoice-meta">
+                     <div class="detail-grid">
+                        <span class="label">วันที่ออก:</span><span class="value">${issueDateText
+                          .replace("วันที่ออก:", "")
+                          .trim()}</span>
+                        <span class="label">ครบกำหนดชำระ:</span><span class="value">${dueDateText
+                          .replace("ครบกำหนดชำระ:", "")
+                          .trim()}</span>
+                        <span class="label">สถานะ:</span><span class="value">${statusBadgeHTML}</span>
+                         <span class="label">${
+                           customerResponsiblePerson.split(":")[0]
+                         }:</span><span class="value">${
       customerResponsiblePerson.split(":")[1]?.trim() || "-"
     }</span>
                     </div>
                 </div>
-                
             </section>
 
             <table class="items-table">
@@ -179,17 +185,17 @@ export default function InvoicePrintDropdown({ invoiceNumber }: Props) {
                     .items-table { width: 100%; border-collapse: collapse; }
                     .items-table th, .items-table td { padding: 0.6rem; border-bottom: 1px solid #eee; }
                     .items-table th { background-color: #f9f9f9; text-align: left; font-weight: 700; font-size: 10pt; }
-                    .totals-section { display: flex; justify-content: flex-end; }
+                    .footer-section, .totals-section { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 2rem; }
                     .totals-table { width: 280px; }
                     .totals-table td { padding: 0.4rem 0; }
                     .grand-total td { font-weight: 700; font-size: 13pt; border-top: 2px solid #333; padding-top: 0.5rem; }
                     .text-center { text-align: center; }
                     .text-right { text-align: right; }
                     .badge { display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 10pt; font-weight: 600; border: 1px solid transparent; }
-                    span[data-variant="success"] { background-color: #dcfce7 !important; color: #166534 !important; }
-                    span[data-variant="default"] { background-color: #dbeafe !important; color: #1e40af !important; }
-                    span[data-variant="destructive"] { background-color: #fee2e2 !important; color: #991b1b !important; }
-                    span[data-variant="secondary"] { background-color: #f1f5f9 !important; color: #1f2937 !important; }
+                    span[data-variant="success"], .badge[style*="background-color: #dcfce7"] { background-color: #dcfce7 !important; color: #166534 !important; }
+                    span[data-variant="default"], .badge[style*="background-color: #dbeafe"] { background-color: #dbeafe !important; color: #1e40af !important; }
+                    span[data-variant="destructive"], .badge[style*="background-color: #fee2e2"] { background-color: #991b1b !important; }
+                    span[data-variant="secondary"], .badge[style*="background-color: #f1f5f9"] { background-color: #f1f5f9 !important; color: #1f2937 !important; }
                     @media print {
                         body { margin: 0; }
                         .print-container { margin: 0; max-width: 100%; }

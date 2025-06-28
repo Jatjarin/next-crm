@@ -38,6 +38,7 @@ type Invoice = {
   due_date: string
   items: InvoiceItem[]
   status: string
+  price_tier: string | null // เพิ่ม price_tier
   customers: Customer | null
   responsible_persons: ResponsiblePerson | null // เพิ่ม Type
 }
@@ -71,6 +72,20 @@ const calculateGrandTotal = (items: InvoiceItem[]): number =>
     0
   ) || 0
 
+const getPriceTierLabel = (tier: string | null) => {
+  switch (tier) {
+    case "R":
+      return "Retail price"
+    case "W":
+      return "Whole Price"
+    case "N":
+      return "Non-Stock Resellers Price"
+    case "S":
+      return "Special price"
+    default:
+      return "-"
+  }
+}
 export default async function InvoiceDetailPage(props: {
   params: Promise<{ id: string }>
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>
@@ -185,9 +200,6 @@ export default async function InvoiceDetailPage(props: {
             <p className="text-sm text-muted-foreground customer-tax-id">
               เลขประจำตัวผู้เสียภาษี: {invoice.customers?.tax_id || "-"}
             </p>
-            <p className="text-sm text-muted-foreground customer-responsible-person">
-              ผู้รับผิดชอบ: {invoice.responsible_persons?.name || "-"}
-            </p>
           </div>
         </section>
         <section className="mb-8">
@@ -228,33 +240,44 @@ export default async function InvoiceDetailPage(props: {
             </TableBody>
           </Table>
         </section>
-        <section>
-          <div className="flex justify-end mt-4">
-            <div className="w-full max-w-sm space-y-2">
-              <div className="flex justify-between">
-                <span>ยอดรวมก่อนภาษี</span>
-                <span>
-                  ฿
-                  {subTotal.toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                  })}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>ภาษีมูลค่าเพิ่ม (7%)</span>
-                <span>
-                  ฿{vat.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-              <div className="flex justify-between font-bold text-lg border-t pt-2">
-                <span>ยอดรวมทั้งสิ้น</span>
-                <span>
-                  ฿
-                  {grandTotal.toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                  })}
-                </span>
-              </div>
+        <section className="flex justify-between items-end">
+          {/* --- ย้ายข้อมูลมาไว้ที่นี่ (ด้านซ้ายล่าง) --- */}
+          <div className="space-y-1 text-sm">
+            <p className="font-semibold text-muted-foreground">ผู้รับผิดชอบ:</p>
+            <p className="font-semibold responsible-person-name">
+              {invoice.responsible_persons?.name || "-"}
+            </p>
+            <p className="font-semibold text-muted-foreground mt-2">
+              ประเภทราคา:
+            </p>
+            <p className="font-semibold price-tier-name">
+              {getPriceTierLabel(invoice.price_tier)}
+            </p>
+          </div>
+
+          {/* ส่วนสรุปยอดเงิน */}
+          <div className="w-full max-w-sm space-y-2">
+            <div className="flex justify-between">
+              <span>ยอดรวมก่อนภาษี</span>
+              <span>
+                ฿
+                {subTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>ภาษีมูลค่าเพิ่ม (7%)</span>
+              <span>
+                ฿{vat.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+            <div className="flex justify-between font-bold text-lg border-t pt-2">
+              <span>ยอดรวมทั้งสิ้น</span>
+              <span>
+                ฿
+                {grandTotal.toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                })}
+              </span>
             </div>
           </div>
         </section>

@@ -10,6 +10,8 @@ import {
   LogOut,
   Package,
   UserCheck,
+  Settings,
+  ClipboardList,
 } from "lucide-react"
 import { logout } from "./actions"
 import { Button } from "@/components/ui/button"
@@ -20,9 +22,11 @@ const navItems = [
   { href: "/", label: "แดชบอร์ด", icon: LayoutDashboard },
   { href: "/customers", label: "ลูกค้า", icon: Users },
   { href: "/invoices", label: "ใบแจ้งหนี้", icon: FileText },
+  { href: "/quotations", label: "ใบเสนอราคา", icon: ClipboardList },
   { href: "/products", label: "สินค้า", icon: Package },
   { href: "/responsible-persons", label: "ผู้รับผิดชอบ", icon: UserCheck },
   { href: "/reports", label: "รายงาน", icon: BarChart2 },
+  { href: "/settings", label: "ตั้งค่า", icon: Settings },
 ]
 
 export default function Sidebar() {

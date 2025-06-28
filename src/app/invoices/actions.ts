@@ -10,7 +10,40 @@ type InvoiceItem = {
   unitPrice: number
 }
 
-export async function addInvoice(formData: FormData) {
+// --- แก้ไขฟังก์ชันนี้ทั้งหมด ---
+// ฟังก์ชันสำหรับหาเลขที่ใบแจ้งหนี้ล่าสุดของปีปัจจุบันและคำนวณเลขถัดไป
+export async function generateNextInvoiceNumber() {
+  const supabase = await createClient()
+  const currentYear = new Date().getFullYear().toString().slice(-2) // e.g., "25" for 2025
+
+  // ค้นหาใบแจ้งหนี้ล่าสุดที่ขึ้นต้นด้วย 'INVNo' และปีปัจจุบัน (เช่น 'INVNo25...')
+  const { data, error } = await supabase
+    .from("invoices")
+    .select("invoice_number")
+    .like("invoice_number", `INVNo${currentYear}%`)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single()
+
+  if (error || !data) {
+    // ถ้าไม่เจอ หรือมี Error (อาจจะเพราะเป็นใบแรกของปี) ให้เริ่มนับที่ 1
+    return 1
+  }
+
+  try {
+    // ดึงเฉพาะตัวเลข Running Number 3 หลักออกมา
+    // จาก "INVNo25001PW..." -> จะได้ "001"
+    const runningNumberStr = data.invoice_number.substring(7, 10)
+    const nextNumber = parseInt(runningNumberStr, 10) + 1
+
+    return isNaN(nextNumber) ? 1 : nextNumber
+  } catch {
+    return 1 // กรณีเกิดข้อผิดพลาดอื่นๆ ให้เริ่มที่ 1
+  }
+}
+
+// --- แก้ไขฟังก์ชันนี้: รับ invoiceNumber เข้ามาโดยตรง ---
+export async function addInvoice(invoiceNumber: string, formData: FormData) {
   const supabase = await createClient()
   const {
     data: { user },
@@ -26,16 +59,15 @@ export async function addInvoice(formData: FormData) {
   let items: InvoiceItem[]
   try {
     items = JSON.parse(itemsString)
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (e) {
     return redirect("/invoices/new?message=Error: Invalid items data.")
   }
 
   const invoiceData = {
     customer_id: Number(customerId),
-    // --- เพิ่มข้อมูลผู้รับผิดชอบ ---
     responsible_person_id: Number(formData.get("responsiblePersonId")),
-    invoice_number: formData.get("invoiceNumber") as string,
+    price_tier: formData.get("priceTier") as string,
+    invoice_number: invoiceNumber, // ใช้เลขที่สร้างจาก Client
     issue_date: formData.get("issueDate") as string,
     due_date: formData.get("dueDate") as string,
     status: "Draft",
@@ -55,7 +87,9 @@ export async function addInvoice(formData: FormData) {
 
   await revalidatePath("/invoices")
   await revalidatePath("/dashboard")
-  await revalidatePath(`/customers/${invoiceData.customer_id}`)
+  if (invoiceData.customer_id) {
+    await revalidatePath(`/customers/${invoiceData.customer_id}`)
+  }
 
   redirect(`/invoices/${data.id}`)
 }
@@ -123,6 +157,7 @@ export async function updateInvoice(invoiceId: number, formData: FormData) {
     issue_date: formData.get("issueDate") as string,
     due_date: formData.get("dueDate") as string,
     items: items,
+    price_tier: formData.get("priceTier") as string,
   }
 
   const { error } = await supabase
@@ -165,4 +200,62 @@ export async function deleteInvoice(invoiceId: number) {
   await revalidatePath("/dashboard")
 
   redirect("/invoices")
+}
+
+// --- ฟังก์ชันสำหรับแปลงใบเสนอราคาเป็นใบแจ้งหนี้ ---
+export async function createInvoiceFromQuotation(quotationId: number) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Authentication required" }
+
+  // 1. ดึงข้อมูลจากใบเสนอราคาต้นทาง
+  const { data: quotation, error: quotationError } = await supabase
+    .from("quotations")
+    .select("*")
+    .eq("id", quotationId)
+    .single()
+
+  if (quotationError || !quotation) {
+    return { error: "Quotation not found." }
+  }
+
+  // 2. เตรียมข้อมูลสำหรับสร้าง Invoice ใหม่
+  // --- แก้ไขที่นี่: สร้างเลขที่ใบแจ้งหนี้ใหม่จากเลขที่ใบเสนอราคาเดิม ---
+  const newInvoiceNumber = `INV${quotation.quotation_number}`
+
+  const today = new Date()
+  const dueDate = new Date()
+  dueDate.setDate(today.getDate() + 30) // กำหนดวันครบกำหนดชำระ +30 วัน
+
+  const invoiceData = {
+    customer_id: quotation.customer_id,
+    responsible_person_id: quotation.responsible_person_id,
+    invoice_number: newInvoiceNumber, // ใช้เลขที่ใหม่ที่สร้างขึ้น
+    issue_date: today.toISOString().split("T")[0],
+    due_date: dueDate.toISOString().split("T")[0],
+    status: "Draft",
+    items: quotation.items,
+    price_tier: quotation.price_tier, // อย่าลืมนำ price_tier มาด้วย
+  }
+
+  // 3. บันทึก Invoice ใหม่ลงฐานข้อมูล
+  const { data: newInvoice, error: insertError } = await supabase
+    .from("invoices")
+    .insert(invoiceData)
+    .select()
+    .single()
+
+  if (insertError) {
+    console.error("Error creating invoice from quotation:", insertError)
+    return { error: "Could not create invoice." }
+  }
+
+  // 4. ล้าง Cache หน้าที่เกี่ยวข้อง
+  await revalidatePath("/invoices")
+  await revalidatePath("/dashboard")
+
+  // 5. ส่งกลับ ID ของ Invoice ที่สร้างใหม่เพื่อ Redirect
+  return { success: true, newInvoiceId: newInvoice.id }
 }

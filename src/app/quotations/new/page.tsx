@@ -1,10 +1,10 @@
 "use client"
 
 import * as React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { addInvoice, generateNextInvoiceNumber } from "../actions"
+import { addQuotation, generateNextQuotationNumber } from "../actions"
 import { Plus, Trash2, Check, ChevronsUpDown, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -31,12 +31,23 @@ import {
   CommandList,
 } from "@/components/ui/command"
 import { cn } from "@/lib/utils"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 // Type Definitions
 type Customer = { id: number; name: string }
 type Product = { id: number; name: string; price: number }
 type ResponsiblePerson = { id: number; name: string; initial: string | null }
-type InvoiceItem = { description: string; quantity: number; unitPrice: number }
+type QuotationItem = {
+  description: string
+  quantity: number
+  unitPrice: number
+}
 
 const priceTiers = [
   { value: "R", label: "Retail price" },
@@ -45,42 +56,37 @@ const priceTiers = [
   { value: "S", label: "Special price" },
 ]
 
-export default function NewInvoicePage() {
+export default function NewQuotationPage() {
   const router = useRouter()
   const supabase = createClient()
   const [customers, setCustomers] = useState<Customer[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [responsiblePersons, setResponsiblePersons] = useState<
     ResponsiblePerson[]
-  >([]) // State ใหม่
-  const [items, setItems] = useState<InvoiceItem[]>([
+  >([])
+  const [items, setItems] = useState<QuotationItem[]>([
     { description: "", quantity: 1, unitPrice: 0 },
   ])
+
+  // State สำหรับสร้าง Quotation Number
   const [selectedCustomerId, setSelectedCustomerId] = useState("")
   const [selectedResponsiblePersonId, setSelectedResponsiblePersonId] =
     useState("")
   const [selectedPriceTier, setSelectedPriceTier] = useState("")
-  const [invoiceNumber, setInvoiceNumber] = useState("กำลังสร้าง...")
+  const [quotationNumber, setQuotationNumber] = useState("กำลังสร้าง...")
 
-  // State สำหรับควบคุมการเปิด-ปิด Combobox
   const [openCustomerCombobox, setOpenCustomerCombobox] = useState(false)
-  const [openResponsiblePersonCombobox, setOpenResponsiblePersonCombobox] =
-    useState(false)
-  const [openPriceTierCombobox, setOpenPriceTierCombobox] = useState(false)
-  const [openProductComboboxes, setOpenProductComboboxes] = useState<{
-    [key: number]: boolean
-  }>({})
-  const [isPending, startTransition] = React.useTransition()
+  const [isPending, startTransition] = useTransition()
 
+  // Fetch ข้อมูลเริ่มต้น
   useEffect(() => {
     const fetchData = async () => {
-      // ดึงข้อมูลทั้ง 3 ส่วนพร้อมกัน
       const [customerRes, productRes, personRes] = await Promise.all([
         supabase.from("customers").select("id, name").order("name"),
         supabase.from("products").select("id, name, price").order("name"),
         supabase
           .from("responsible_persons")
-          .select("id, name,initial")
+          .select("id, name, initial")
           .order("name"),
       ])
 
@@ -91,7 +97,7 @@ export default function NewInvoicePage() {
     fetchData()
   }, [supabase])
 
-  // --- Effect สำหรับสร้างเลขที่ใบแจ้งหนี้อัตโนมัติ ---
+  // Effect สำหรับสร้างเลขที่ใบเสนอราคาอัตโนมัติ
   useEffect(() => {
     const generateNumber = async () => {
       if (selectedResponsiblePersonId && selectedPriceTier) {
@@ -99,38 +105,40 @@ export default function NewInvoicePage() {
           (p) => p.id === Number(selectedResponsiblePersonId)
         )
         if (!person || !person.initial) {
-          setInvoiceNumber("ข้อมูลผู้รับผิดชอบไม่สมบูรณ์")
+          setQuotationNumber("ข้อมูลผู้รับผิดชอบไม่สมบูรณ์")
           return
         }
 
         try {
-          const runningNumber = await generateNextInvoiceNumber()
-          const year = new Date().getFullYear().toString().slice(-2)
-          const date = new Date()
-            .toLocaleDateString("th-GB")
-            .split("/")
-            .join("-")
+          const runningNumber = await generateNextQuotationNumber()
+          const year = new Date().getFullYear().toString().slice(-2) // ได้ "25" (ค.ศ.)
+
+          // สร้างวันที่ในรูปแบบ DD-MM-YYYY
+          const d = new Date()
+          const day = String(d.getDate()).padStart(2, "0")
+          const month = String(d.getMonth() + 1).padStart(2, "0")
+          const fullYear = d.getFullYear()
+          const date = `${day}-${month}-${fullYear}`
 
           // ประกอบร่างเป็นเลขที่ใหม่
-          const newNumber = `INVNo${year}${String(runningNumber).padStart(
+          const newNumber = `No${year}${String(runningNumber).padStart(
             3,
             "0"
           )}${person.initial}${selectedPriceTier} ${date}`
-          setInvoiceNumber(newNumber)
+          setQuotationNumber(newNumber)
         } catch (error) {
-          setInvoiceNumber("Error generating number")
+          setQuotationNumber("Error generating number")
         }
       } else {
-        setInvoiceNumber("กรุณาเลือกผู้รับผิดชอบและประเภทราคา")
+        setQuotationNumber("กรุณาเลือกผู้รับผิดชอบและประเภทราคา")
       }
     }
     generateNumber()
   }, [selectedResponsiblePersonId, selectedPriceTier, responsiblePersons])
 
-  // ... โค้ด Logic เดิม ...
   const handleItemChange = (
     index: number,
-    field: keyof InvoiceItem,
+    field: keyof QuotationItem,
     value: string | number
   ) => {
     const newItems = [...items]
@@ -166,22 +174,22 @@ export default function NewInvoicePage() {
 
   const handleFormSubmit = (formData: FormData) => {
     if (
-      invoiceNumber.startsWith("กำลังสร้าง") ||
-      invoiceNumber.startsWith("กรุณา") ||
-      invoiceNumber.startsWith("Error")
+      quotationNumber.startsWith("กำลังสร้าง") ||
+      quotationNumber.startsWith("กรุณา") ||
+      quotationNumber.startsWith("Error")
     ) {
-      alert("ไม่สามารถบันทึกได้: เลขที่ใบแจ้งหนี้ไม่ถูกต้อง")
+      alert("ไม่สามารถบันทึกได้: เลขที่ใบเสนอราคาไม่ถูกต้อง")
       return
     }
     startTransition(() => {
-      // ส่ง invoiceNumber จาก state ไปให้ action โดยตรง
-      addInvoice(invoiceNumber, formData)
+      // ส่ง quotationNumber จาก state ไปให้ action โดยตรง
+      addQuotation(quotationNumber, formData)
     })
   }
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold mb-6">สร้างใบแจ้งหนี้ใหม่</h1>
+      <h1 className="text-3xl font-bold mb-6">สร้างใบเสนอราคาใหม่</h1>
       <form action={handleFormSubmit}>
         <input type="hidden" name="customerId" value={selectedCustomerId} />
         <input
@@ -191,13 +199,13 @@ export default function NewInvoicePage() {
         />
         <input type="hidden" name="priceTier" value={selectedPriceTier} />
         <input type="hidden" name="items" value={JSON.stringify(items)} />
+
         <Card>
           <CardHeader>
-            <CardTitle>ข้อมูลใบแจ้งหนี้</CardTitle>
+            <CardTitle>ข้อมูลใบเสนอราคา</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Combobox ลูกค้า */}
               <div className="space-y-2">
                 <Label>ลูกค้า</Label>
                 <Popover
@@ -250,113 +258,55 @@ export default function NewInvoicePage() {
                   </PopoverContent>
                 </Popover>
               </div>
-
-              {/* --- เพิ่มเมนูเลือกผู้รับผิดชอบที่นี่ --- */}
               <div className="space-y-2">
                 <Label>ผู้รับผิดชอบ</Label>
-                <Popover
-                  open={openResponsiblePersonCombobox}
-                  onOpenChange={setOpenResponsiblePersonCombobox}
+                <Select
+                  required
+                  value={selectedResponsiblePersonId}
+                  onValueChange={setSelectedResponsiblePersonId}
                 >
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      className="w-full justify-between"
-                    >
-                      {selectedResponsiblePersonId
-                        ? responsiblePersons.find(
-                            (p) => String(p.id) === selectedResponsiblePersonId
-                          )?.name
-                        : "-- เลือกผู้รับผิดชอบ --"}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                    <Command>
-                      <CommandInput placeholder="ค้นหาผู้รับผิดชอบ..." />
-                      <CommandList>
-                        <CommandEmpty>ไม่พบข้อมูล</CommandEmpty>
-                        <CommandGroup>
-                          {responsiblePersons.map((p) => (
-                            <CommandItem
-                              key={p.id}
-                              value={p.name}
-                              onSelect={() => {
-                                setSelectedResponsiblePersonId(String(p.id))
-                                setOpenResponsiblePersonCombobox(false)
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  selectedResponsiblePersonId === String(p.id)
-                                    ? "opacity-100"
-                                    : "opacity-0"
-                                )}
-                              />
-                              {p.name}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                  <SelectTrigger>
+                    <SelectValue placeholder="-- เลือกผู้รับผิดชอบ --" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {responsiblePersons.map((p) => (
+                      <SelectItem key={p.id} value={String(p.id)}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
-                <Label>ประเภทราคา</Label>
-                <Popover
-                  open={openPriceTierCombobox}
-                  onOpenChange={setOpenPriceTierCombobox}
+                <Label>ประเภทใบเสนอราคา</Label>
+                <Select
+                  required
+                  value={selectedPriceTier}
+                  onValueChange={setSelectedPriceTier}
                 >
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      className="w-full justify-between"
-                    >
-                      {selectedPriceTier
-                        ? priceTiers.find((p) => p.value === selectedPriceTier)
-                            ?.label
-                        : "-- เลือกประเภทราคา --"}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                    <Command>
-                      <CommandList>
-                        <CommandEmpty>ไม่พบข้อมูล</CommandEmpty>
-                        <CommandGroup>
-                          {priceTiers.map((p) => (
-                            <CommandItem
-                              key={p.value}
-                              value={p.label}
-                              onSelect={() => {
-                                setSelectedPriceTier(p.value)
-                                setOpenPriceTierCombobox(false)
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  selectedPriceTier === p.value
-                                    ? "opacity-100"
-                                    : "opacity-0"
-                                )}
-                              />
-                              {p.label}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                  <SelectTrigger>
+                    <SelectValue placeholder="-- เลือกประเภทใบเสนอราคา --" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {priceTiers.map((p) => (
+                      <SelectItem key={p.value} value={p.value}>
+                        {p.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-
-              {/* ... Input fields อื่นๆ ... */}
-
+              <div className="space-y-2 lg:col-span-3">
+                <Label htmlFor="quotationNumberDisplay">
+                  เลขที่ใบเสนอราคา (อัตโนมัติ)
+                </Label>
+                <Input
+                  id="quotationNumberDisplay"
+                  value={quotationNumber}
+                  readOnly
+                  className="font-mono bg-gray-100"
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="issueDate">วันที่ออก</Label>
                 <Input
@@ -368,22 +318,10 @@ export default function NewInvoicePage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="dueDate">วันครบกำหนดชำระ</Label>
-                <Input type="date" id="dueDate" name="dueDate" required />
-              </div>
-              <div className="space-y-2 lg:col-span-3">
-                <Label htmlFor="invoiceNumberDisplay">
-                  เลขที่ใบแจ้งหนี้ (อัตโนมัติ)
-                </Label>
-                <Input
-                  id="invoiceNumberDisplay"
-                  value={invoiceNumber}
-                  readOnly
-                  className="font-mono bg-gray-100"
-                />
+                <Label htmlFor="expiryDate">วันที่หมดอายุ</Label>
+                <Input type="date" id="expiryDate" name="expiryDate" required />
               </div>
             </div>
-            {/* ... ส่วนรายการสินค้าและยอดรวม ... */}
             <div className="border-t pt-6">
               <h3 className="text-lg font-semibold mb-4">รายการ</h3>
               <div className="space-y-2">
@@ -392,45 +330,28 @@ export default function NewInvoicePage() {
                     key={index}
                     className="flex flex-col md:flex-row items-center gap-2"
                   >
-                    <Popover
-                      open={openProductComboboxes[index] || false}
-                      onOpenChange={(open) =>
-                        setOpenProductComboboxes((prev) => ({
-                          ...prev,
-                          [index]: open,
-                        }))
-                      }
-                    >
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          className="w-full md:w-1/3 justify-between"
-                        >
-                          {item.description || "-- เลือกสินค้า --"}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                        <Command>
-                          <CommandInput placeholder="ค้นหาสินค้า..." />
-                          <CommandList>
-                            <CommandEmpty>ไม่พบสินค้า</CommandEmpty>
-                            <CommandGroup>
-                              {products.map((p) => (
-                                <CommandItem
-                                  key={p.id}
-                                  value={p.name}
-                                  onSelect={() => handleProductSelect(index, p)}
-                                >
-                                  {p.name}
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
+                    <div className="w-full md:w-1/3">
+                      <Select
+                        onValueChange={(productId) => {
+                          const selectedProduct = products.find(
+                            (p) => p.id === Number(productId)
+                          )
+                          if (selectedProduct)
+                            handleProductSelect(index, selectedProduct)
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="-- เลือกสินค้า --" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {products.map((p) => (
+                            <SelectItem key={p.id} value={String(p.id)}>
+                              {p.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <Input
                       type="text"
                       placeholder="หรือพิมพ์คำอธิบายเอง"

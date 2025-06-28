@@ -1,9 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { updateInvoice } from "../../actions" // ใช้ action สำหรับ update
+import { updateQuotation } from "../../actions"
 import { Plus, Trash2, Check, ChevronsUpDown, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -28,59 +28,79 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { cn } from "@/lib/utils"
-//import { createClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 
 // Type Definitions
 type Customer = { id: number; name: string }
 type Product = { id: number; name: string; price: number }
 type ResponsiblePerson = { id: number; name: string }
-type InvoiceItem = { description: string; quantity: number; unitPrice: number }
-type Invoice = {
+type QuotationItem = {
+  description: string
+  quantity: number
+  unitPrice: number
+}
+type Quotation = {
   id: number
   customer_id: number
-  responsible_person_id: number | null // เพิ่ม field นี้
-  invoice_number: string
+  responsible_person_id: number | null
+  quotation_number: string
   issue_date: string
-  due_date: string
-  items: InvoiceItem[]
+  expiry_date: string
+  items: QuotationItem[]
 }
 
 interface Props {
   customers: Customer[]
-  products: Product[]
-  responsiblePersons: ResponsiblePerson[] // รับ props ใหม่
-  invoice: Invoice
+  responsiblePersons: ResponsiblePerson[]
+  quotation: Quotation
 }
 
-export default function InvoiceForm({
+export default function QuotationForm({
   customers,
-  invoice,
   responsiblePersons,
+  quotation,
 }: Props) {
   const router = useRouter()
-  const [items, setItems] = useState<InvoiceItem[]>(
-    invoice.items || [{ description: "", quantity: 1, unitPrice: 0 }]
+  const supabase = createClient()
+  const [products, setProducts] = useState<Product[]>([])
+  const [items, setItems] = useState<QuotationItem[]>(
+    quotation.items || [{ description: "", quantity: 1, unitPrice: 0 }]
   )
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>(
-    String(invoice.customer_id)
+    String(quotation.customer_id)
   )
   const [selectedResponsiblePersonId, setSelectedResponsiblePersonId] =
-    useState<string>(String(invoice.responsible_person_id || ""))
+    useState<string>(String(quotation.responsible_person_id || ""))
 
-  // State ใหม่สำหรับผู้รับผิดชอบ
   const [openCustomerCombobox, setOpenCustomerCombobox] = useState(false)
   const [openResponsiblePersonCombobox, setOpenResponsiblePersonCombobox] =
     useState(false)
   const [isPending, startTransition] = React.useTransition()
 
-  // ผูก ID ของ Invoice เข้ากับ Server Action
-  const updateInvoiceWithId = updateInvoice.bind(null, invoice.id)
+  const updateQuotationWithId = updateQuotation.bind(null, quotation.id)
 
-  // ... (ฟังก์ชัน handleItemChange, addItem, removeItem, handleProductSelect เหมือนเดิม) ...
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const { data: productData } = await supabase
+        .from("products")
+        .select("id, name, price")
+        .order("name")
+      if (productData) setProducts(productData)
+    }
+    fetchProducts()
+  }, [supabase])
+
   const handleItemChange = (
     index: number,
-    field: keyof InvoiceItem,
+    field: keyof QuotationItem,
     value: string | number
   ) => {
     const newItems = [...items]
@@ -95,6 +115,15 @@ export default function InvoiceForm({
     setItems([...items, { description: "", quantity: 1, unitPrice: 0 }])
   const removeItem = (index: number) =>
     setItems(items.filter((_, i) => i !== index))
+  const handleProductSelect = (index: number, product: Product) => {
+    const newItems = [...items]
+    newItems[index] = {
+      ...newItems[index],
+      description: product.name,
+      unitPrice: product.price,
+    }
+    setItems(newItems)
+  }
 
   const grandTotal = items.reduce(
     (sum, item) => sum + item.quantity * item.unitPrice,
@@ -106,7 +135,7 @@ export default function InvoiceForm({
   return (
     <form
       action={(formData) =>
-        startTransition(() => updateInvoiceWithId(formData))
+        startTransition(() => updateQuotationWithId(formData))
       }
     >
       <input type="hidden" name="items" value={JSON.stringify(items)} />
@@ -115,14 +144,13 @@ export default function InvoiceForm({
         type="hidden"
         name="responsiblePersonId"
         value={selectedResponsiblePersonId}
-      />{" "}
-      {/* เพิ่ม input ที่ซ่อนไว้ */}
+      />
+
       <Card>
         <CardHeader>
-          <CardTitle>ข้อมูลใบแจ้งหนี้</CardTitle>
+          <CardTitle>ข้อมูลใบเสนอราคา</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* ... ฟอร์มเหมือนหน้า New แต่มี defaultValue ... */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>ลูกค้า</Label>
@@ -176,7 +204,6 @@ export default function InvoiceForm({
                 </PopoverContent>
               </Popover>
             </div>
-            {/* --- เพิ่มเมนูเลือกผู้รับผิดชอบที่นี่ --- */}
             <div className="space-y-2">
               <Label>ผู้รับผิดชอบ</Label>
               <Popover
@@ -230,12 +257,12 @@ export default function InvoiceForm({
               </Popover>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="invoiceNumber">เลขที่ Invoice</Label>
+              <Label htmlFor="quotationNumber">เลขที่ใบเสนอราคา</Label>
               <Input
-                id="invoiceNumber"
-                name="invoiceNumber"
+                id="quotationNumber"
+                name="quotationNumber"
                 required
-                defaultValue={invoice.invoice_number}
+                defaultValue={quotation.quotation_number}
               />
             </div>
             <div className="space-y-2">
@@ -245,31 +272,53 @@ export default function InvoiceForm({
                 name="issueDate"
                 type="date"
                 required
-                defaultValue={invoice.issue_date}
+                defaultValue={quotation.issue_date}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="dueDate">วันครบกำหนด</Label>
+              <Label htmlFor="expiryDate">วันที่หมดอายุ</Label>
               <Input
-                id="dueDate"
-                name="dueDate"
+                id="expiryDate"
+                name="expiryDate"
                 type="date"
                 required
-                defaultValue={invoice.due_date}
+                defaultValue={quotation.expiry_date}
               />
             </div>
           </div>
           <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold mb-4">รายการสินค้า/บริการ</h3>
+            <h3 className="text-lg font-semibold mb-4">รายการ</h3>
             <div className="space-y-2">
               {items.map((item, index) => (
                 <div
                   key={index}
                   className="flex flex-col md:flex-row items-center gap-2"
                 >
+                  <div className="w-full md:w-1/3">
+                    <Select
+                      onValueChange={(productId) => {
+                        const selectedProduct = products.find(
+                          (p) => p.id === Number(productId)
+                        )
+                        if (selectedProduct)
+                          handleProductSelect(index, selectedProduct)
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="-- เลือกสินค้า --" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {products.map((p) => (
+                          <SelectItem key={p.id} value={String(p.id)}>
+                            {p.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <Input
                     type="text"
-                    placeholder="คำอธิบาย"
+                    placeholder="หรือพิมพ์คำอธิบายเอง"
                     value={item.description}
                     onChange={(e) =>
                       handleItemChange(index, "description", e.target.value)
@@ -317,7 +366,7 @@ export default function InvoiceForm({
             </Button>
           </div>
           <div className="flex justify-end mt-4">
-            <div className="w-full max-w-xs space-y-2">
+            <div className="w-full max-w-sm space-y-2">
               <div className="flex justify-between">
                 <span>ยอดรวมก่อนภาษี</span>
                 <span>
