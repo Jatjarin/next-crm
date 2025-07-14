@@ -61,8 +61,8 @@ export default async function ReportsPage() {
       </p>
     )
   }
-
-  const typedInvoices = (invoices || []) as Invoice[]
+  const typedInvoices = (invoices || []) as unknown as Invoice[]
+  //const typedInvoices = (invoices || []) as Invoice[]
 
   // --- 2. ประมวลผลข้อมูลสำหรับสร้างรายงาน ---
 

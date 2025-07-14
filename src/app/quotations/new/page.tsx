@@ -127,6 +127,7 @@ export default function NewQuotationPage() {
           )}${person.initial}${selectedPriceTier} ${date}`
           setQuotationNumber(newNumber)
         } catch (error) {
+          console.error(error)
           setQuotationNumber("Error generating number")
         }
       } else {

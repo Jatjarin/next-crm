@@ -5,16 +5,16 @@ import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 
 type Props = {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default async function EditQuotationPage({ params }: Props) {
   const supabase = await createClient()
-
+  const { id } = await params
   // ดึงข้อมูลทั้ง 3 ส่วนพร้อมกันเพื่อประสิทธิภาพสูงสุด
   const [quotationRes, customersRes, responsiblePersonsRes] = await Promise.all(
     [
-      supabase.from("quotations").select("*").eq("id", params.id).single(),
+      supabase.from("quotations").select("*").eq("id", id).single(),
       supabase.from("customers").select("id, name"),
       supabase.from("responsible_persons").select("id, name"),
     ]

@@ -118,6 +118,7 @@ export default function NewInvoicePage() {
           )}${person.initial}${selectedPriceTier} ${date}`
           setInvoiceNumber(newNumber)
         } catch (error) {
+          console.error(error)
           setInvoiceNumber("Error generating number")
         }
       } else {

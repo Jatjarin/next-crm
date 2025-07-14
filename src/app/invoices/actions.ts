@@ -60,6 +60,7 @@ export async function addInvoice(invoiceNumber: string, formData: FormData) {
   try {
     items = JSON.parse(itemsString)
   } catch (e) {
+    console.error("Error parsing items data:", e)
     return redirect("/invoices/new?message=Error: Invalid items data.")
   }
 

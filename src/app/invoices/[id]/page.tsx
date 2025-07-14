@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Pencil } from "lucide-react"
 
 // --- Type Definitions ---
+type Settings = { company_name: string; company_address: string }
 type Customer = {
   id: number
   name: string
@@ -26,11 +27,7 @@ type Customer = {
   responsible_person: string | null
 }
 type ResponsiblePerson = { name: string }
-type InvoiceItem = {
-  description: string
-  quantity: number
-  unitPrice: number
-}
+type InvoiceItem = { description: string; quantity: number; unitPrice: number }
 type Invoice = {
   id: number
   invoice_number: string
@@ -38,9 +35,9 @@ type Invoice = {
   due_date: string
   items: InvoiceItem[]
   status: string
-  price_tier: string | null // เพิ่ม price_tier
+  price_tier: string | null
   customers: Customer | null
-  responsible_persons: ResponsiblePerson | null // เพิ่ม Type
+  responsible_persons: ResponsiblePerson | null
 }
 // type Props = {
 //   params: { id: string }
@@ -95,17 +92,29 @@ export default async function InvoiceDetailPage(props: {
   const { id } = params
 
   const supabase = await createClient()
-  const { data: invoiceData, error } = await supabase
-    .from("invoices")
-    .select(`*, customers!left(*),responsible_persons!left(name)`)
-    .eq("id", id)
-    .single()
+  // --- ดึงข้อมูล Settings และ Invoice พร้อมกัน ---
+  const [invoiceRes, settingsRes] = await Promise.all([
+    supabase
+      .from("invoices")
+      .select(`*, customers!left(*), responsible_persons!left(*)`)
+      .eq("id", id)
+      .single(),
+    supabase.from("settings").select("*").eq("id", 1).single(),
+  ])
 
-  if (error || !invoiceData) {
+  const { data: invoiceData, error: invoiceError } = invoiceRes
+  const { data: settingsData, error: settingsError } = settingsRes
+
+  if (settingsError) {
+    console.error("Could not fetch company settings:", settingsError)
+  }
+
+  if (invoiceError || !invoiceData) {
     notFound()
   }
 
   const invoice = invoiceData as Invoice
+  const settings = settingsData as Settings
 
   const grandTotal = calculateGrandTotal(invoice.items)
   const subTotal = grandTotal / 1.07
@@ -129,6 +138,8 @@ export default async function InvoiceDetailPage(props: {
             </h1>
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">
+            {/* <InvoicePrintDropdown invoiceNumber={invoice.invoice_number} /> */}
+            {/* <InvoicePrintDropdown invoice={invoice} /> */}
             <InvoicePrintDropdown invoiceNumber={invoice.invoice_number} />
             <Button asChild variant="outline">
               <Link href={`/invoices/${invoice.id}/edit`}>
@@ -160,10 +171,10 @@ export default async function InvoiceDetailPage(props: {
                 className="mb-2"
               />
               <h2 className="text-xl font-bold mb-1">
-                บริษัท สัก วู้ดเวิร์ค จำกัด
+                {settings?.company_name || "ชื่อบริษัท"}
               </h2>
               <p className="text-sm text-muted-foreground">
-                16/7 ถ.สายตรอกนอง ต.ขลุง อ.ขลุง จ.จันทบุรี 22110
+                {settings?.company_address || "ที่อยู่บริษัท"}
               </p>
             </div>
             <div className="text-right">

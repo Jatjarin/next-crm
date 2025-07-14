@@ -62,6 +62,7 @@ export async function addQuotation(
   try {
     items = JSON.parse(itemsString)
   } catch (e) {
+    console.error("Error parsing items data:", e)
     return redirect("/quotations/new?message=Error: Invalid items data.")
   }
 
@@ -105,6 +106,7 @@ export async function updateQuotation(quotationId: number, formData: FormData) {
   try {
     items = JSON.parse(itemsString)
   } catch (e) {
+    console.error("Error parsing items data:", e)
     return redirect(
       `/quotations/${quotationId}/edit?message=Error: Invalid items data.`
     )
