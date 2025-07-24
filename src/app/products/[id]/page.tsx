@@ -57,6 +57,13 @@ export default async function ProductDetailPage(props: Props) {
               })}
             </p>
           </div>
+          {/* --- เพิ่มการแสดงผลสต็อก --- */}
+          <div>
+            <p className="font-medium text-gray-500">จำนวนในสต็อก</p>
+            <p className="text-xl font-semibold">
+              {product.stock_quantity} ชิ้น
+            </p>
+          </div>
           <div>
             <p className="font-medium text-gray-500">คำอธิบาย</p>
             <p>{product.description || "-"}</p>

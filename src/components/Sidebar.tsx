@@ -1,4 +1,4 @@
-"use client" // ต้องเป็น Client Component เพื่อให้สามารถใช้ usePathname hook ได้
+"use client"
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -10,21 +10,43 @@ import {
   LogOut,
   Package,
   UserCheck,
-  Settings,
   ClipboardList,
+  Settings,
+  UserCog,
+  History,
+  ChevronRight,
 } from "lucide-react"
 import { logout } from "./actions"
 import { Button } from "@/components/ui/button"
-// import { cn } from "@/lib/utils"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
+//import { cn } from "@/lib/utils"
 
-// สร้าง Array ของ Navigation Items เพื่อให้จัดการง่ายขึ้น
+// 1. ปรับโครงสร้าง navItems
 const navItems = [
   { href: "/", label: "แดชบอร์ด", icon: LayoutDashboard },
   { href: "/customers", label: "ลูกค้า", icon: Users },
-  { href: "/invoices", label: "ใบแจ้งหนี้", icon: FileText },
   { href: "/quotations", label: "ใบเสนอราคา", icon: ClipboardList },
+  { href: "/invoices", label: "ใบแจ้งหนี้", icon: FileText },
   { href: "/products", label: "สินค้า", icon: Package },
   { href: "/responsible-persons", label: "ผู้รับผิดชอบ", icon: UserCheck },
+  // --- สร้างเมนูหลักสำหรับ HRM ---
+  {
+    label: "พนักงาน",
+    icon: UserCog,
+    // --- เพิ่มเมนูย่อยที่นี่ ---
+    submenus: [
+      { href: "/employees", label: "รายชื่อพนักงาน", icon: UserCog },
+      {
+        href: "/employees/leave-history",
+        label: "ประวัติการลา",
+        icon: History,
+      },
+    ],
+  },
   { href: "/reports", label: "รายงาน", icon: BarChart2 },
   { href: "/settings", label: "ตั้งค่า", icon: Settings },
 ]
@@ -39,16 +61,43 @@ export default function Sidebar() {
       </div>
       <div className="flex flex-1 flex-col gap-y-7 p-4">
         <nav className="flex flex-col gap-y-1">
-          {navItems.map((item) => {
-            // --- แก้ไข Logic การตรวจสอบ Active State ที่นี่ ---
-            // ตรวจสอบทั้งหน้าที่ตรงกันพอดี (เช่น /invoices)
-            // และหน้าที่เป็น sub-route (เช่น /invoices/123)
-            const isActive =
-              pathname === item.href || pathname.startsWith(item.href + "/")
-            return (
+          {navItems.map((item) =>
+            // 2. ตรวจสอบว่ามีเมนูย่อยหรือไม่
+            item.submenus ? (
+              <Collapsible
+                key={item.label}
+                defaultOpen={pathname.startsWith("/employees")}
+              >
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className="w-full justify-start">
+                    <item.icon className="mr-2 h-4 w-4" />
+                    {item.label}
+                    <ChevronRight className="ml-auto h-4 w-4 transition-transform [&[data-state=open]]:rotate-90" />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-1 pt-1 pl-6">
+                  {item.submenus.map((submenu) => {
+                    const isSubmenuActive = pathname === submenu.href
+                    return (
+                      <Button
+                        key={submenu.label}
+                        variant={isSubmenuActive ? "secondary" : "ghost"}
+                        className="w-full justify-start"
+                        asChild
+                      >
+                        <Link href={submenu.href} prefetch={false}>
+                          {submenu.label}
+                        </Link>
+                      </Button>
+                    )
+                  })}
+                </CollapsibleContent>
+              </Collapsible>
+            ) : (
+              // 3. ถ้าไม่มีเมนูย่อย ให้แสดงผลแบบเดิม
               <Button
                 key={item.label}
-                variant={isActive ? "secondary" : "ghost"}
+                variant={pathname === item.href ? "secondary" : "ghost"}
                 className="w-full justify-start"
                 asChild
               >
@@ -58,7 +107,7 @@ export default function Sidebar() {
                 </Link>
               </Button>
             )
-          })}
+          )}
         </nav>
         <div className="mt-auto">
           <form action={logout}>

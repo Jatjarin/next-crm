@@ -33,6 +33,7 @@ type Product = {
   name: string
   description: string | null
   price: number
+  stock_quantity: number // เพิ่ม field สต็อก
 }
 
 interface Props {
@@ -110,7 +111,22 @@ export default function ProductClientPage({ initialProducts }: Props) {
                     name="price"
                     type="number"
                     step="0.01"
+                    defaultValue={0}
                     className="col-span-3"
+                    required
+                  />
+                </div>
+                {/* --- เพิ่มช่องกรอกสต็อก --- */}
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="stock_quantity" className="text-right">
+                    จำนวนในสต็อก
+                  </Label>
+                  <Input
+                    id="stock_quantity"
+                    name="stock_quantity"
+                    className="col-span-3"
+                    type="number"
+                    defaultValue={0}
                     required
                   />
                 </div>
@@ -138,6 +154,7 @@ export default function ProductClientPage({ initialProducts }: Props) {
               <TableRow>
                 <TableHead>ชื่อสินค้า/บริการ</TableHead>
                 <TableHead>คำอธิบาย</TableHead>
+                <TableHead className="text-right">จำนวน</TableHead>
                 <TableHead className="text-right">ราคา</TableHead>
               </TableRow>
             </TableHeader>
@@ -152,6 +169,10 @@ export default function ProductClientPage({ initialProducts }: Props) {
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {product.description}
+                  </TableCell>
+                  {/* --- เพิ่มการแสดงผลสต็อก --- */}
+                  <TableCell className="text-center">
+                    {product.stock_quantity}
                   </TableCell>
                   <TableCell className="text-right">
                     ฿

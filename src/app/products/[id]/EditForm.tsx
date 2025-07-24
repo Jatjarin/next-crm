@@ -20,6 +20,7 @@ type Product = {
   name: string
   description: string | null
   price: number
+  stock_quantity: number // เพิ่ม field สต็อก
 }
 
 interface Props {
@@ -70,6 +71,17 @@ export default function EditForm({ product }: Props) {
               defaultValue={product.price}
               required
             />
+            {/* --- เพิ่มช่องแก้ไขสต็อก --- */}
+            <div className="space-y-1">
+              <Label htmlFor="stock_quantity">จำนวนในสต็อก</Label>
+              <Input
+                id="stock_quantity"
+                name="stock_quantity"
+                type="number"
+                defaultValue={product.stock_quantity}
+                required
+              />
+            </div>
           </div>
         </CardContent>
         <CardFooter className="flex justify-end gap-2">

@@ -7,18 +7,17 @@ import { redirect } from "next/navigation"
 // ฟังก์ชันสำหรับเพิ่มสินค้าใหม่
 export async function addProduct(formData: FormData) {
   const supabase = await createClient()
-
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) {
-    return redirect("/login")
-  }
+  if (!user) return redirect("/login")
 
   const productData = {
     name: formData.get("name") as string,
     description: formData.get("description") as string,
     price: Number(formData.get("price")),
+    // --- เพิ่มข้อมูลสต็อก ---
+    stock_quantity: Number(formData.get("stock_quantity")),
   }
 
   const { error } = await supabase.from("products").insert(productData)
@@ -48,6 +47,8 @@ export async function updateProduct(productId: number, formData: FormData) {
     name: formData.get("name") as string,
     description: formData.get("description") as string,
     price: Number(formData.get("price")),
+    // --- เพิ่มข้อมูลสต็อก ---
+    stock_quantity: Number(formData.get("stock_quantity")),
   }
 
   const { error } = await supabase

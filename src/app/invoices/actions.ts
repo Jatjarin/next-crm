@@ -95,6 +95,7 @@ export async function addInvoice(invoiceNumber: string, formData: FormData) {
   redirect(`/invoices/${data.id}`)
 }
 
+// --- แก้ไขฟังก์ชันนี้ ---
 export async function updateInvoiceStatus(
   invoiceId: number,
   newStatus: string
@@ -105,23 +106,45 @@ export async function updateInvoiceStatus(
   } = await supabase.auth.getUser()
   if (!user) return { message: "Authentication required" }
 
+  // 1. อัปเดตสถานะของ Invoice ก่อน
+  const { error: statusUpdateError } = await supabase
+    .from("invoices")
+    .update({ status: newStatus })
+    .eq("id", invoiceId)
+
+  if (statusUpdateError) {
+    console.error("Error updating invoice status:", statusUpdateError)
+    return { message: "Error updating status." }
+  }
+
+  // 2. ถ้าสถานะที่อัปเดตคือ "Paid" ให้ทำการตัดสต็อก
+  if (newStatus === "Paid") {
+    const { error: rpcError } = await supabase.rpc(
+      "deduct_stock_from_invoice",
+      {
+        p_invoice_id: invoiceId,
+      }
+    )
+
+    if (rpcError) {
+      console.error("Error deducting stock:", rpcError)
+      // Optional: แจ้งเตือนผู้ใช้ว่าตัดสต็อกไม่สำเร็จ แต่สถานะเปลี่ยนแล้ว
+      return { message: "Status updated, but failed to deduct stock." }
+    }
+  }
+
+  // 3. Revalidate path ที่เกี่ยวข้องทั้งหมด
   const { data: invoice } = await supabase
     .from("invoices")
     .select("customer_id")
     .eq("id", invoiceId)
     .single()
-
-  const { error } = await supabase
-    .from("invoices")
-    .update({ status: newStatus })
-    .eq("id", invoiceId)
-  if (error) return { message: "Error updating status." }
-
   await Promise.all([
     revalidatePath("/reports"),
     revalidatePath("/invoices"),
     revalidatePath(`/invoices/${invoiceId}`),
     revalidatePath("/dashboard"),
+    revalidatePath("/products"), // เพิ่มการ revalidate หน้าสินค้า
     invoice?.customer_id
       ? revalidatePath(`/customers/${invoice.customer_id}`)
       : Promise.resolve(),
