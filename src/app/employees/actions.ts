@@ -54,13 +54,16 @@ export async function addEmployee(formData: FormData) {
 
 /**
  * Updates an existing employee's details.
+ * @returns {Promise<{success: boolean, error?: string}>}
  */
 export async function updateEmployee(employeeId: number, formData: FormData) {
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) return redirect("/login")
+  if (!user) {
+    return { success: false, error: "Authentication required." }
+  }
 
   const employeeData = {
     full_name: formData.get("fullName") as string,
@@ -75,12 +78,13 @@ export async function updateEmployee(employeeId: number, formData: FormData) {
 
   if (error) {
     console.error("Error updating employee:", error)
-    return redirect(`/employees/${employeeId}?message=Error updating employee`)
+    return { success: false, error: error.message }
   }
 
-  await revalidatePath("/employees")
-  await revalidatePath(`/employees/${employeeId}`)
-  redirect("/employees")
+  revalidatePath("/employees")
+  revalidatePath(`/employees/${employeeId}`)
+
+  return { success: true }
 }
 
 /**
