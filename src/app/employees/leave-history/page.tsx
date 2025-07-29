@@ -17,7 +17,7 @@ import {
 import Link from "next/link"
 
 // --- Type Definitions ---
-// Raw type from Supabase query
+// More flexible type that can handle both object and array responses
 type SupabaseLeaveRequest = {
   id: number
   start_date: string
@@ -27,14 +27,23 @@ type SupabaseLeaveRequest = {
     | {
         full_name: string
         id: number
+      }
+    | {
+        full_name: string
+        id: number
       }[]
-    | null // Supabase returns arrays for joins
+    | null
   leave_types:
     | {
         name: string
+      }
+    | {
+        name: string
       }[]
-    | null // Supabase returns arrays for joins
+    | null
 }
+
+// Processed type for our component
 type LeaveRequest = {
   id: number
   start_date: string
@@ -49,11 +58,6 @@ type LeaveRequest = {
   } | null
 }
 
-// interface PageProps {
-//   params: Promise<{ id: string }>
-//   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>
-// }
-
 // --- Helper Functions ---
 const formatDate = (dateString: string | null) => {
   if (!dateString) return "-"
@@ -65,24 +69,42 @@ const formatDate = (dateString: string | null) => {
 }
 
 // Transform Supabase result to our expected format
-const transformLeaveRequest = (
-  request: SupabaseLeaveRequest
-): LeaveRequest => ({
-  id: request.id,
-  start_date: request.start_date,
-  days_taken: request.days_taken,
-  reason: request.reason,
-  employees: request.employees?.[0] || null, // Take first element from array
-  leave_types: request.leave_types?.[0] || null, // Take first element from array
-})
+const transformLeaveRequest = (request: SupabaseLeaveRequest): LeaveRequest => {
+  console.log("Transforming request:", request)
 
-//export default async function LeaveHistoryPage({ params }: PageProps) {
-//const { id } = await params
+  // Handle employees - could be object, array, or null
+  let employees = null
+  if (request.employees) {
+    if (Array.isArray(request.employees)) {
+      employees = request.employees.length > 0 ? request.employees[0] : null
+    } else {
+      employees = request.employees
+    }
+  }
+
+  // Handle leave_types - could be object, array, or null
+  let leave_types = null
+  if (request.leave_types) {
+    if (Array.isArray(request.leave_types)) {
+      leave_types =
+        request.leave_types.length > 0 ? request.leave_types[0] : null
+    } else {
+      leave_types = request.leave_types
+    }
+  }
+
+  return {
+    id: request.id,
+    start_date: request.start_date,
+    days_taken: request.days_taken,
+    reason: request.reason,
+    employees,
+    leave_types,
+  }
+}
+
 export default async function LeaveHistoryPage() {
   const supabase = await createClient()
-
-  // export default async function LeaveHistoryPage() {
-  //   const supabase = await createClient()
 
   // ดึงข้อมูลประวัติการลาทั้งหมด พร้อมข้อมูลพนักงานและประเภทการลาที่เกี่ยวข้อง
   const { data: leaveRequests, error } = await supabase
@@ -102,6 +124,9 @@ export default async function LeaveHistoryPage() {
   if (error) {
     return <p className="p-8">เกิดข้อผิดพลาดในการโหลดข้อมูล: {error.message}</p>
   }
+
+  // Debug: Log the raw data to see the actual structure
+  console.log("Raw leaveRequests:", JSON.stringify(leaveRequests, null, 2))
 
   // Transform the data to match our expected types
   const typedLeaveRequests: LeaveRequest[] = (leaveRequests || []).map(
