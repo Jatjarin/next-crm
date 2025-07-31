@@ -34,6 +34,9 @@ type Product = {
   description: string | null
   price: number
   stock_quantity: number // เพิ่ม field สต็อก
+  width: number | null
+  length: number | null
+  thickness: number | null
 }
 
 interface Props {
@@ -65,7 +68,7 @@ export default function ProductClientPage({ initialProducts }: Props) {
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">สินค้า/บริการ</h1>
+        <h1 className="text-3xl font-bold">สินค้า</h1>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -74,7 +77,7 @@ export default function ProductClientPage({ initialProducts }: Props) {
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>เพิ่มสินค้า/บริการใหม่</DialogTitle>
+              <DialogTitle>เพิ่มสินค้า</DialogTitle>
               <DialogDescription>
                 กรอกข้อมูลเพื่อเพิ่มรายการลงในระบบ
               </DialogDescription>
@@ -101,6 +104,42 @@ export default function ProductClientPage({ initialProducts }: Props) {
                     name="description"
                     className="col-span-3"
                   />
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  {/* Corrected Order: Thickness, Width, Length */}
+                  <div className="space-y-2">
+                    <Label htmlFor="thickness">ความหนา (มม.)</Label>
+                    <Input
+                      id="thickness"
+                      name="thickness"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      defaultValue={0}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="width">ความกว้าง (มม.)</Label>
+                    <Input
+                      id="width"
+                      name="width"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      defaultValue={0}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="length">ความยาว (ม.)</Label>
+                    <Input
+                      id="length"
+                      name="length"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      defaultValue={0}
+                    />
+                  </div>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="price" className="text-right">
@@ -130,6 +169,20 @@ export default function ProductClientPage({ initialProducts }: Props) {
                     required
                   />
                 </div>
+                {/* New Field for Low Stock Threshold */}
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="low_stock_threshold" className="text-right">
+                    จุดสั่งซื้อขั้นต่ำ
+                  </Label>
+                  <Input
+                    id="low_stock_threshold"
+                    name="low_stock_threshold"
+                    className="col-span-3"
+                    type="number"
+                    defaultValue={0}
+                    required
+                  />
+                </div>
               </div>
               <DialogFooter>
                 <Button type="submit" disabled={isPending}>
@@ -153,6 +206,8 @@ export default function ProductClientPage({ initialProducts }: Props) {
             <TableHeader>
               <TableRow>
                 <TableHead>ชื่อสินค้า/บริการ</TableHead>
+                <TableHead>ขนาด (นxกxย) มม.</TableHead>{" "}
+                {/* Corrected: Added this header */}
                 <TableHead>คำอธิบาย</TableHead>
                 <TableHead className="text-right">จำนวน</TableHead>
                 <TableHead className="text-right">ราคา</TableHead>
@@ -167,6 +222,12 @@ export default function ProductClientPage({ initialProducts }: Props) {
                   onClick={() => handleRowClick(product.id)}
                 >
                   <TableCell className="font-medium">{product.name}</TableCell>
+                  {/* Corrected: Added this cell to display dimensions */}
+                  <TableCell className="text-muted-foreground">
+                    {`${product.thickness ?? "-"} x ${product.width ?? "-"} x ${
+                      product.length ?? "-"
+                    }`}
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {product.description}
                   </TableCell>

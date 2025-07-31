@@ -1,6 +1,12 @@
 import { createClient } from "@/lib/supabase/server"
 import Link from "next/link"
-import { Users, Wallet, Hourglass, FileWarning } from "lucide-react"
+import {
+  Users,
+  Wallet,
+  Hourglass,
+  FileWarning,
+  TriangleAlert,
+} from "lucide-react"
 import {
   Card,
   CardContent,
@@ -43,6 +49,14 @@ interface Item {
   quantity: number
   unitPrice: number
 }
+
+type LowStockProduct = {
+  id: number
+  name: string
+  stock_quantity: number
+  low_stock_threshold: number
+}
+
 const calculateTotal = (items: Item[]): number =>
   items?.reduce(
     (sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0),
@@ -71,7 +85,7 @@ const getStatusBadge = (status: string) => {
 export default async function DashboardPage() {
   const supabase = await createClient()
 
-  const [customerData, invoiceData] = await Promise.all([
+  const [customerData, invoiceData, lowStockData] = await Promise.all([
     supabase.from("customers").select("*", { count: "exact", head: true }),
     supabase
       .from("invoices")
@@ -79,17 +93,21 @@ export default async function DashboardPage() {
         "id, invoice_number, items, status, issue_date, customers!inner ( name )"
       )
       .order("issue_date", { ascending: false }),
+    // Query for low stock products
+    supabase.rpc("get_low_stock_products"),
   ])
 
   const { count: customerCount } = customerData
   const { data: invoices, error: invoiceError } = invoiceData
+  const { data: lowStockProducts, error: lowStockError } = lowStockData
 
-  if (invoiceError) {
+  if (invoiceError || lowStockError) {
     return <p className="p-8">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>
   }
 
   // แก้ไข: ใช้ unknown เพื่อหลีกเลี่ยง TypeScript error
   const typedInvoices = (invoices || []) as unknown as InvoiceWithCustomer[]
+  const typedLowStockProducts = (lowStockProducts || []) as LowStockProduct[]
 
   const totalRevenue = typedInvoices
     .filter((inv) => inv.status === "Paid")
@@ -200,6 +218,56 @@ export default async function DashboardPage() {
                   </TableCell>
                 </TableRow>
               ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      {/* Low Stock Alert Card (takes 1/3 width on large screens) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <TriangleAlert className="mr-2 h-5 w-5 text-destructive" />
+            สินค้าใกล้หมดสต็อก
+          </CardTitle>
+          <CardDescription>
+            สินค้าที่จำนวนคงเหลือน้อยกว่าหรือเท่ากับจุดสั่งซื้อ
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>สินค้า</TableHead>
+                <TableHead className="text-right">คงเหลือ</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {typedLowStockProducts.length > 0 ? (
+                typedLowStockProducts.map((product) => (
+                  <TableRow key={product.id}>
+                    <TableCell className="font-medium">
+                      <Link
+                        href={`/products/${product.id}`}
+                        className="hover:underline"
+                      >
+                        {product.name}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-right font-bold text-destructive">
+                      {product.stock_quantity}
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={2}
+                    className="text-center text-muted-foreground h-24"
+                  >
+                    ไม่มีสินค้าใกล้หมดสต็อก
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

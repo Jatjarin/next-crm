@@ -16,8 +16,12 @@ export async function addProduct(formData: FormData) {
     name: formData.get("name") as string,
     description: formData.get("description") as string,
     price: Number(formData.get("price")),
-    // --- เพิ่มข้อมูลสต็อก ---
     stock_quantity: Number(formData.get("stock_quantity")),
+    low_stock_threshold: Number(formData.get("low_stock_threshold")),
+    // Add new dimension fields
+    width: Number(formData.get("width")),
+    length: Number(formData.get("length")),
+    thickness: Number(formData.get("thickness")),
   }
 
   const { error } = await supabase.from("products").insert(productData)
@@ -31,11 +35,9 @@ export async function addProduct(formData: FormData) {
   redirect("/products")
 }
 
-// --- เพิ่มฟังก์ชันนี้ ---
 // ฟังก์ชันสำหรับแก้ไขข้อมูลสินค้า
 export async function updateProduct(productId: number, formData: FormData) {
   const supabase = await createClient()
-
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -47,8 +49,12 @@ export async function updateProduct(productId: number, formData: FormData) {
     name: formData.get("name") as string,
     description: formData.get("description") as string,
     price: Number(formData.get("price")),
-    // --- เพิ่มข้อมูลสต็อก ---
     stock_quantity: Number(formData.get("stock_quantity")),
+    low_stock_threshold: Number(formData.get("low_stock_threshold")),
+    // Add new dimension fields
+    width: Number(formData.get("width")),
+    length: Number(formData.get("length")),
+    thickness: Number(formData.get("thickness")),
   }
 
   const { error } = await supabase
@@ -66,11 +72,9 @@ export async function updateProduct(productId: number, formData: FormData) {
   redirect(`/products`)
 }
 
-// --- เพิ่มฟังก์ชันนี้ ---
 // ฟังก์ชันสำหรับลบข้อมูลสินค้า
 export async function deleteProduct(productId: number) {
   const supabase = await createClient()
-
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -86,5 +90,105 @@ export async function deleteProduct(productId: number) {
   }
 
   await revalidatePath("/products")
+  await revalidatePath("/dashboard") // Revalidate dashboard as well
   redirect("/products")
+}
+
+// ฟังก์ชันสำหรับปรับปรุงสต็อก
+// *** Updated function to handle warehouse-specific stock adjustments ***
+export async function adjustStock(formData: FormData) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Authentication required" }
+
+  const productId = Number(formData.get("productId"))
+  const warehouseId = Number(formData.get("warehouseId")) // Get warehouseId from form
+  const type = formData.get("type") as string
+  const quantityChange = Number(formData.get("quantityChange"))
+  const notes = formData.get("notes") as string
+
+  if (!productId || !warehouseId || isNaN(quantityChange)) {
+    return {
+      error:
+        "Invalid data provided. Product, warehouse, and quantity are required.",
+    }
+  }
+
+  // 1. Call RPC to adjust inventory in the specific warehouse
+  const { error: updateError } = await supabase.rpc(
+    "adjust_inventory_in_warehouse",
+    {
+      p_product_id: productId,
+      p_warehouse_id: warehouseId,
+      p_quantity_change: quantityChange,
+    }
+  )
+
+  if (updateError) {
+    console.error("Error adjusting inventory:", updateError)
+    return { error: "Could not adjust inventory." }
+  }
+
+  // 2. Call RPC to record the movement
+  const { error: recordError } = await supabase.rpc("record_stock_movement", {
+    p_product_id: productId,
+    p_invoice_id: null,
+    p_type: type,
+    p_quantity_change: quantityChange,
+    p_notes: notes,
+    p_warehouse_id: warehouseId, // Pass warehouseId to the recording function
+  })
+
+  if (recordError) {
+    console.error("Error recording stock movement:", recordError)
+    return { error: "Stock updated, but failed to record movement." }
+  }
+
+  // 3. Revalidate paths to show updated data
+  revalidatePath("/products")
+  revalidatePath(`/products/${productId}`)
+  revalidatePath("/dashboard")
+
+  return { success: true }
+}
+export async function transferStock(formData: FormData) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Authentication required" }
+
+  const productId = Number(formData.get("productId"))
+  const fromWarehouseId = Number(formData.get("fromWarehouseId"))
+  const toWarehouseId = Number(formData.get("toWarehouseId"))
+  const quantity = Number(formData.get("quantity"))
+  const notes = formData.get("notes") as string
+
+  if (!productId || !fromWarehouseId || !toWarehouseId || !quantity) {
+    return { error: "ข้อมูลไม่ครบถ้วน" }
+  }
+
+  if (fromWarehouseId === toWarehouseId) {
+    return { error: "คลังสินค้าต้นทางและปลายทางต้องแตกต่างกัน" }
+  }
+
+  const { error } = await supabase.rpc("transfer_stock", {
+    p_product_id: productId,
+    p_quantity: quantity,
+    p_from_warehouse_id: fromWarehouseId,
+    p_to_warehouse_id: toWarehouseId,
+    p_notes: notes,
+  })
+
+  if (error) {
+    console.error("Error transferring stock:", error)
+    return { error: "ไม่สามารถย้ายสินค้าได้" }
+  }
+
+  revalidatePath("/products")
+  revalidatePath(`/products/${productId}`)
+
+  return { success: true }
 }

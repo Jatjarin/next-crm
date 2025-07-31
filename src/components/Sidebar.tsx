@@ -15,6 +15,7 @@ import {
   UserCog,
   History,
   ChevronRight,
+  Warehouse,
 } from "lucide-react"
 import { logout } from "./actions"
 import { Button } from "@/components/ui/button"
@@ -32,6 +33,7 @@ const navItems = [
   { href: "/quotations", label: "ใบเสนอราคา", icon: ClipboardList },
   { href: "/invoices", label: "ใบแจ้งหนี้", icon: FileText },
   { href: "/products", label: "สินค้า", icon: Package },
+  { href: "/warehouses", label: "คลังสินค้า", icon: Warehouse },
   { href: "/responsible-persons", label: "ผู้รับผิดชอบ", icon: UserCheck },
   // --- สร้างเมนูหลักสำหรับ HRM ---
   {
@@ -57,7 +59,7 @@ export default function Sidebar() {
   return (
     <aside className="hidden h-screen w-64 flex-col border-r bg-background md:flex">
       <div className="border-b p-4">
-        <h1 className="text-2xl font-bold">MyCRM</h1>
+        <h1 className="text-2xl font-bold">EAZY Erp</h1>
       </div>
       <div className="flex flex-1 flex-col gap-y-7 p-4">
         <nav className="flex flex-col gap-y-1">

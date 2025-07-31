@@ -11,8 +11,8 @@ const sarabun = Sarabun({
 })
 
 export const metadata: Metadata = {
-  title: "MyCRM with Next.js",
-  description: "CRM and Invoicing Application",
+  title: "EAZY Erp",
+  description: "EAZY erp for SAK Woodworks",
 }
 
 export default async function RootLayout({
