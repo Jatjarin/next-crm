@@ -4,6 +4,7 @@ import { createInvoiceFromQuotation } from "@/app/invoices/actions"
 import { Button } from "@/components/ui/button"
 import { FilePlus2, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { useTransition } from "react"
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
 export default function ConvertToInvoiceButton({ quotationId }: Props) {
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
+  const t = useTranslations("ConvertToInvoiceButton")
 
   const handleConvert = () => {
     if (!confirm("คุณต้องการแปลงใบเสนอราคานี้เป็นใบแจ้งหนี้ใช่หรือไม่?")) {
@@ -37,7 +39,7 @@ export default function ConvertToInvoiceButton({ quotationId }: Props) {
       ) : (
         <FilePlus2 className="mr-2 h-4 w-4" />
       )}
-      {isPending ? "กำลังแปลง..." : "แปลงเป็นใบแจ้งหนี้"}
+      {isPending ? t("convertToInvoiceStatus") : t("convertToInvoice")}
     </Button>
   )
 }

@@ -1,20 +1,54 @@
-import { type NextRequest } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { updateSession } from "@/lib/supabase/middleware"
 
+// const locales = ["en", "th", "ru"]
+// const defaultLocale = "th"
+
+// function getLocale(request: NextRequest): string {
+//   // 1. Check for locale in cookies first
+//   const localeCookie = request.cookies.get("NEXT_LOCALE")?.value
+//   if (localeCookie && locales.includes(localeCookie)) {
+//     return localeCookie
+//   }
+
+//   // 2. If no cookie, check the Accept-Language header
+//   const languages = request.headers.get("accept-language")
+//   if (languages) {
+//     const preferredLocales = languages
+//       .split(",")
+//       .map((lang) => lang.split(";")[0].trim().slice(0, 2))
+//     for (const locale of preferredLocales) {
+//       if (locales.includes(locale)) {
+//         return locale
+//       }
+//     }
+//   }
+
+//   // 3. Fallback to the default locale
+//   return defaultLocale
+// }
+
 export async function middleware(request: NextRequest) {
-  // ฟังก์ชันนี้จะทำการอัปเดต session ของผู้ใช้ให้เป็นปัจจุบัน
-  const { response, user } = await updateSession(request)
+  // First, handle Supabase session management
+  const { response: supabaseResponse, user } = await updateSession(request)
 
+  // Determine the locale based on cookie or header
+  //const locale = getLocale(request)
+
+  // Add the determined locale to the request headers
+  // This makes it available to Server Components via `getLocale`
+  //supabaseResponse.headers.set("x-next-intl-locale", locale)
+
+  // Authentication logic
   const url = request.nextUrl.clone()
+  const isLoginPage = url.pathname === "/login"
 
-  // ถ้ายังไม่ล็อกอิน และพยายามเข้าหน้าที่ไม่ใช่หน้า Login
-  if (!user && url.pathname !== "/login") {
-    // ให้ redirect ไปยังหน้า Login
-    url.pathname = "/login"
-    return Response.redirect(url)
+  if (!user && !isLoginPage) {
+    // Redirect to login page if not authenticated
+    return NextResponse.redirect(new URL("/login", request.url))
   }
 
-  return response
+  return supabaseResponse
 }
 
 export const config = {
@@ -24,9 +58,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - /auth (สำหรับ callback ของ Supabase)
-     * Feel free to modify this pattern to include more paths.
+     * - /auth (for Supabase callback)
      */
-    "/((?!_next/static|_next/image|favicon.ico).*)",
+    "/((?!_next/static|_next/image|favicon.ico|auth).*)",
   ],
 }

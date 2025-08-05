@@ -4,7 +4,8 @@ import { useState, useEffect, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { addCustomer } from "./actions"
 import { Plus, Loader2 } from "lucide-react"
-
+//import { getTranslations } from "next-intl/server"
+import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -39,6 +40,7 @@ interface Props {
 }
 
 export default function CustomerClientPage({ initialCustomers }: Props) {
+  const t = useTranslations("CustomersPage")
   const [customers, setCustomers] = useState(initialCustomers)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -62,25 +64,23 @@ export default function CustomerClientPage({ initialCustomers }: Props) {
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">ลูกค้า</h1>
+        <h1 className="text-3xl font-bold">{t("title")}</h1>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Plus size={20} className="mr-2" /> เพิ่มลูกค้าใหม่
+              <Plus size={20} className="mr-2" /> {t("addNew")}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-xl">
             <DialogHeader>
-              <DialogTitle>เพิ่มลูกค้าใหม่</DialogTitle>
-              <DialogDescription>
-                กรอกข้อมูลลูกค้าเพื่อเพิ่มลงในระบบ
-              </DialogDescription>
+              <DialogTitle>{t("dialogTitle")}</DialogTitle>
+              <DialogDescription>{t("dialogDescription")}</DialogDescription>
             </DialogHeader>
             <form action={handleFormSubmit}>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="name" className="text-right">
-                    ชื่อ
+                    {t("dialogName")}
                   </Label>
                   <Input
                     id="name"
@@ -91,13 +91,13 @@ export default function CustomerClientPage({ initialCustomers }: Props) {
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="taxId" className="text-right">
-                    เลขผู้เสียภาษี
+                    {t("dialogTaxId")}
                   </Label>
                   <Input id="taxId" name="taxId" className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="address" className="text-right">
-                    ที่อยู่
+                    {t("dialogAddress")}
                   </Label>
                   <Textarea
                     id="address"
@@ -107,19 +107,19 @@ export default function CustomerClientPage({ initialCustomers }: Props) {
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="phone" className="text-right">
-                    เบอร์โทร
+                    {t("dialogPhone")}
                   </Label>
                   <Input id="phone" name="phone" className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="lineId" className="text-right">
-                    LINE ID
+                    {t("dialogLineId")}
                   </Label>
                   <Input id="lineId" name="lineId" className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="responsiblePerson" className="text-right">
-                    ผู้รับผิดชอบ
+                    {t("dialogResponsible")}
                   </Label>
                   <Input
                     id="responsiblePerson"
@@ -133,7 +133,7 @@ export default function CustomerClientPage({ initialCustomers }: Props) {
                   {isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
-                  บันทึก
+                  {t("buttonTitle")}
                 </Button>
               </DialogFooter>
             </form>
@@ -145,9 +145,9 @@ export default function CustomerClientPage({ initialCustomers }: Props) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>ชื่อลูกค้า/บริษัท</TableHead>
-              <TableHead>เบอร์โทร</TableHead>
-              <TableHead>ผู้รับผิดชอบ</TableHead>
+              <TableHead>{t("tableHeaderName")}</TableHead>
+              <TableHead>{t("tableHeaderPhone")}</TableHead>
+              <TableHead>{t("tableHeaderResponsible")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

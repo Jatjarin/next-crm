@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import Link from "next/link"
+import { getTranslations } from "next-intl/server"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 //import PrintButton from "./PrintButton" // 1. Import ปุ่มพิมพ์เข้ามา
@@ -42,17 +43,31 @@ interface InvoiceWithCustomer {
 }
 
 // Helper Functions
-const getStatusBadge = (status: string) => {
+// const getStatusBadge = (status: string) => {
+//   switch (status) {
+//     case "Paid":
+//       return <Badge variant="success">ชำระแล้ว</Badge>
+//     case "Sent":
+//       return <Badge variant="default">ส่งแล้ว</Badge>
+//     case "Overdue":
+//       return <Badge variant="destructive">ค้างชำระ</Badge>
+//     case "Draft":
+//     default:
+//       return <Badge variant="secondary">ฉบับร่าง</Badge>
+//   }
+// }
+
+const getStatusBadgeVariant = (status: string) => {
   switch (status) {
     case "Paid":
-      return <Badge variant="success">ชำระแล้ว</Badge>
+      return "success"
     case "Sent":
-      return <Badge variant="default">ส่งแล้ว</Badge>
+      return "default"
     case "Overdue":
-      return <Badge variant="destructive">ค้างชำระ</Badge>
+      return "destructive"
     case "Draft":
     default:
-      return <Badge variant="secondary">ฉบับร่าง</Badge>
+      return "secondary"
   }
 }
 
@@ -71,7 +86,8 @@ const calculateTotal = (items: InvoiceItem[]): number =>
 
 export default async function InvoicesPage() {
   const supabase = await createClient()
-
+  const t = await getTranslations("InvoicesPage")
+  const tStatus = await getTranslations("StatusKeys")
   const { data: invoices, error } = await supabase
     .from("invoices")
     .select(
@@ -96,30 +112,32 @@ export default async function InvoicesPage() {
   return (
     <div className="p-8">
       <div className="no-print flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">ใบแจ้งหนี้</h1>
+        <h1 className="text-3xl font-bold">{t("title")}</h1>
         <Button asChild>
           <Link href="/invoices/new">
-            <Plus size={20} className="mr-2" /> สร้างใบแจ้งหนี้ใหม่
+            <Plus size={20} className="mr-2" /> {t("addNew")}
           </Link>
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>รายการใบแจ้งหนี้ทั้งหมด</CardTitle>
-          <CardDescription>
-            จัดการและติดตามสถานะใบแจ้งหนี้ของลูกค้าทั้งหมด
-          </CardDescription>
+          <CardTitle>{t("tableHeaderTitle")}</CardTitle>
+          <CardDescription>{t("tableHeaderDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>เลขที่ Invoice</TableHead>
-                <TableHead>ลูกค้า</TableHead>
-                <TableHead>วันที่ออก</TableHead>
-                <TableHead className="text-right">ยอดรวม</TableHead>
-                <TableHead className="text-center">สถานะ</TableHead>
+                <TableHead>{t("tableHeaderNumber")}</TableHead>
+                <TableHead>{t("tableHeaderCustomer")}</TableHead>
+                <TableHead>{t("tableHeaderIssueDate")}</TableHead>
+                <TableHead className="text-right">
+                  {t("tableHeaderTotal")}
+                </TableHead>
+                <TableHead className="text-center">
+                  {t("tableHeaderStatus")}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -145,7 +163,9 @@ export default async function InvoicesPage() {
                       })}
                     </TableCell>
                     <TableCell className="text-center">
-                      {getStatusBadge(invoice.status)}
+                      <Badge variant={getStatusBadgeVariant(invoice.status)}>
+                        {tStatus(invoice.status.toLowerCase() as string)}
+                      </Badge>
                     </TableCell>
                   </TableRow>
                 ))

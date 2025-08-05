@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import Link from "next/link"
+//import { usePathname } from "next/navigation"
+import { getTranslations } from "next-intl/server"
 import {
   Users,
   Wallet,
@@ -68,22 +70,39 @@ const formatDate = (dateString: string) =>
     month: "short",
     day: "numeric",
   })
-const getStatusBadge = (status: string) => {
+// const getStatusBadge = (status: string) => {
+//   switch (status) {
+//     case "Paid":
+//       return <Badge variant="success">ชำระแล้ว</Badge>
+//     case "Sent":
+//       return <Badge variant="default">ส่งแล้ว</Badge>
+//     case "Overdue":
+//       return <Badge variant="destructive">ค้างชำระ</Badge>
+//     case "Draft":
+//     default:
+//       return <Badge variant="secondary">ฉบับร่าง</Badge>
+//   }
+// }
+// ฟังก์ชันนี้จะคืนค่า variant ของ Badge ตามสถานะ
+const getStatusBadgeVariant = (status: string) => {
   switch (status) {
     case "Paid":
-      return <Badge variant="success">ชำระแล้ว</Badge>
+      return "success"
     case "Sent":
-      return <Badge variant="default">ส่งแล้ว</Badge>
+      return "default"
     case "Overdue":
-      return <Badge variant="destructive">ค้างชำระ</Badge>
+      return "destructive"
     case "Draft":
     default:
-      return <Badge variant="secondary">ฉบับร่าง</Badge>
+      return "secondary"
   }
 }
 
 export default async function DashboardPage() {
   const supabase = await createClient()
+  // ดึงฟังก์ชันแปลภาษาสำหรับ Server Component
+  const t = await getTranslations("Dashboard")
+  const tStatus = await getTranslations("StatusKeys")
 
   const [customerData, invoiceData, lowStockData] = await Promise.all([
     supabase.from("customers").select("*", { count: "exact", head: true }),
@@ -124,52 +143,66 @@ export default async function DashboardPage() {
 
   return (
     <div className="p-8 space-y-6">
-      <h1 className="text-3xl font-bold text-gray-800">แดชบอร์ด</h1>
+      <h1 className="text-3xl font-bold text-gray-800">{t("title")}</h1>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">ลูกค้าทั้งหมด</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("totalCustomers")}
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{customerCount ?? 0}</div>
-            <p className="text-xs text-muted-foreground">จำนวนลูกค้าในระบบ</p>
+            <p className="text-xs text-muted-foreground">
+              {t("cardDescriptions.totalCustomers")}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">รายรับทั้งหมด</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("totalRevenue")}
+            </CardTitle>
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               ฿{totalRevenue.toLocaleString("en-US")}
             </div>
-            <p className="text-xs text-muted-foreground">ยอดรวมที่ชำระแล้ว</p>
+            <p className="text-xs text-muted-foreground">
+              {t("cardDescriptions.totalRevenue")}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">ยอดรอชำระ</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("outstandingRevenue")}
+            </CardTitle>
             <Hourglass className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               ฿{outstandingRevenue.toLocaleString("en-US")}
             </div>
-            <p className="text-xs text-muted-foreground">ยอดรวมที่ยังไม่ชำระ</p>
+            <p className="text-xs text-muted-foreground">
+              {t("cardDescriptions.outstandingRevenue")}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">ค้างชำระ</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("overdueInvoices")}
+            </CardTitle>
             <FileWarning className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{overdueInvoicesCount}</div>
             <p className="text-xs text-muted-foreground">
-              จำนวนใบแจ้งหนี้ที่เลยกำหนด
+              {t("cardDescriptions.overdueInvoices")}
             </p>
           </CardContent>
         </Card>
@@ -177,18 +210,20 @@ export default async function DashboardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>ใบแจ้งหนี้ล่าสุด</CardTitle>
-          <CardDescription>รายการใบแจ้งหนี้ 5 รายการล่าสุด</CardDescription>
+          <CardTitle>{t("recentInvoicesTitle")}</CardTitle>
+          <CardDescription>{t("recentInvoicesDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>เลขที่ Invoice</TableHead>
-                <TableHead>ลูกค้า</TableHead>
-                <TableHead>วันที่ออก</TableHead>
-                <TableHead className="text-right">ยอดรวม</TableHead>
-                <TableHead className="text-center">สถานะ</TableHead>
+                <TableHead>{t("tableInvoiceNo")}</TableHead>
+                <TableHead>{t("tableCustomer")}</TableHead>
+                <TableHead>{t("tableIssueDate")}</TableHead>
+                <TableHead className="text-right">{t("tableTotal")}</TableHead>
+                <TableHead className="text-center">
+                  {t("tableStatus")}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -213,8 +248,13 @@ export default async function DashboardPage() {
                       minimumFractionDigits: 2,
                     })}
                   </TableCell>
-                  <TableCell className="text-center">
+                  {/* <TableCell className="text-center">
                     {getStatusBadge(invoice.status)}
+                  </TableCell> */}
+                  <TableCell className="text-center">
+                    <Badge variant={getStatusBadgeVariant(invoice.status)}>
+                      {tStatus(invoice.status.toLowerCase() as string)}
+                    </Badge>
                   </TableCell>
                 </TableRow>
               ))}
@@ -227,18 +267,18 @@ export default async function DashboardPage() {
         <CardHeader>
           <CardTitle className="flex items-center">
             <TriangleAlert className="mr-2 h-5 w-5 text-destructive" />
-            สินค้าใกล้หมดสต็อก
+            {t("lowStockAlertTitle")}
           </CardTitle>
-          <CardDescription>
-            สินค้าที่จำนวนคงเหลือน้อยกว่าหรือเท่ากับจุดสั่งซื้อ
-          </CardDescription>
+          <CardDescription>{t("lowStockAlertDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>สินค้า</TableHead>
-                <TableHead className="text-right">คงเหลือ</TableHead>
+                <TableHead>{t("tableProduct")}</TableHead>
+                <TableHead className="text-right">
+                  {t("tableRemaining")}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -264,7 +304,7 @@ export default async function DashboardPage() {
                     colSpan={2}
                     className="text-center text-muted-foreground h-24"
                   >
-                    ไม่มีสินค้าใกล้หมดสต็อก
+                    {t("noLowStock")}
                   </TableCell>
                 </TableRow>
               )}

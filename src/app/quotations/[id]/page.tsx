@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
+import { getTranslations } from "next-intl/server"
+
 import UpdateStatusButton from "./UpdateStatusButton"
 import DeleteButton from "./DeleteButton"
 import ConvertToInvoiceButton from "./ConvertToInvoiceButton"
@@ -53,19 +55,34 @@ type Quotation = {
 // }
 
 // --- Helper Functions ---
-const getStatusBadge = (status: string) => {
+// const getStatusBadge = (status: string) => {
+//   switch (status) {
+//     case "Accepted":
+//       return <Badge variant="success">อนุมัติแล้ว</Badge>
+//     case "Sent":
+//       return <Badge variant="default">ส่งแล้ว</Badge>
+//     case "Rejected":
+//       return <Badge variant="destructive">ไม่อนุมัติ</Badge>
+//     case "Draft":
+//     default:
+//       return <Badge variant="secondary">ฉบับร่าง</Badge>
+//   }
+// }
+
+const getStatusBadgeVariant = (status: string) => {
   switch (status) {
     case "Accepted":
-      return <Badge variant="success">อนุมัติแล้ว</Badge>
+      return "success"
     case "Sent":
-      return <Badge variant="default">ส่งแล้ว</Badge>
+      return "default"
     case "Rejected":
-      return <Badge variant="destructive">ไม่อนุมัติ</Badge>
+      return "destructive"
     case "Draft":
     default:
-      return <Badge variant="secondary">ฉบับร่าง</Badge>
+      return "secondary"
   }
 }
+
 const formatDate = (dateString: string) =>
   new Date(dateString).toLocaleDateString("th-TH", {
     year: "numeric",
@@ -100,7 +117,9 @@ export default async function QuotationDetailPage(props: {
   const params = await props.params
   const { id } = params
   const supabase = await createClient()
-
+  // ดึงฟังก์ชันแปลภาษาสำหรับ Server Component
+  const t = await getTranslations("QuotationDetailPage")
+  const tStatus = await getTranslations("QuotationStatus")
   // --- แก้ไขที่นี่: ดึงข้อมูล Settings มาพร้อมกัน ---
   const [quotationRes, settingsRes] = await Promise.all([
     supabase
@@ -143,10 +162,12 @@ export default async function QuotationDetailPage(props: {
               href="/quotations"
               className="text-sm text-muted-foreground hover:underline flex items-center mb-2"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" /> กลับไปหน้ารายการใบเสนอราคา
+              <ArrowLeft className="w-4 h-4 mr-2" /> {t("backLink")}
             </Link>
             <h1 className="text-3xl font-bold">
-              ใบเสนอราคา #{quotation.quotation_number}
+              {t("quotationTitleNumber")}
+              <br />
+              {quotation.quotation_number}
             </h1>
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">
@@ -155,7 +176,7 @@ export default async function QuotationDetailPage(props: {
             )}
             <Button asChild variant="outline">
               <Link href={`/quotations/${quotation.id}/edit`}>
-                <Pencil size={16} className="mr-2" /> แก้ไข
+                <Pencil size={16} className="mr-2" /> {t("editQuotationButton")}
               </Link>
             </Button>
             <DeleteButton quotationId={quotation.id} />
@@ -188,7 +209,9 @@ export default async function QuotationDetailPage(props: {
                 </p>
               </div>
               <div className="text-right">
-                <h1 className="text-4xl font-bold text-gray-800">QUOTATION</h1>
+                <h1 className="text-4xl font-bold text-gray-800">
+                  {t("headQuotationTitle")}
+                </h1>
                 <p className="text-muted-foreground">
                   #{quotation.quotation_number}
                 </p>
@@ -199,7 +222,9 @@ export default async function QuotationDetailPage(props: {
             <section className="mb-8">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <p className="font-semibold text-muted-foreground">ลูกค้า:</p>
+                  <p className="font-semibold text-muted-foreground">
+                    {t("customer")}
+                  </p>
                   <p className="text-lg font-semibold">
                     {quotation.customers?.name}
                   </p>
@@ -207,20 +232,24 @@ export default async function QuotationDetailPage(props: {
                     {quotation.customers?.address}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    เลขประจำตัวผู้เสียภาษี: {quotation.customers?.tax_id || "-"}
+                    {t("TaxID")} {quotation.customers?.tax_id || "-"}
                   </p>
                 </div>
                 <div className="text-right space-y-1">
                   <p>
-                    <strong>วันที่ออก:</strong>{" "}
+                    <strong>{t("issueDate")}</strong>{" "}
                     {formatDate(quotation.issue_date)}
                   </p>
                   <p>
-                    <strong>ยืนราคาถึงวันที่:</strong>{" "}
+                    <strong>{t("expireDate")}</strong>{" "}
                     {formatDate(quotation.expiry_date)}
                   </p>
                   <p className="mt-2">
-                    <strong>สถานะ:</strong> {getStatusBadge(quotation.status)}
+                    <strong>{t("status")}</strong>
+                    <Badge variant={getStatusBadgeVariant(quotation.status)}>
+                      {tStatus(quotation.status.toLowerCase() as string)}
+                    </Badge>
+                    {/* {getStatusBadge(quotation.status)} */}
                   </p>
                 </div>
               </div>
@@ -229,12 +258,16 @@ export default async function QuotationDetailPage(props: {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>รายการ</TableHead>
-                    <TableHead className="text-center">จำนวน</TableHead>
-                    <TableHead className="text-right">
-                      ราคา/หน่วย (รวม VAT)
+                    <TableHead>{t("itemsTitle")}</TableHead>
+                    <TableHead className="text-center">
+                      {t("tableHeaderQuantity")}
                     </TableHead>
-                    <TableHead className="text-right">รวม</TableHead>
+                    <TableHead className="text-right">
+                      {t("tableHeaderUnitPrice")}
+                    </TableHead>
+                    <TableHead className="text-right">
+                      {t("tableHeaderAmount")}
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -266,13 +299,13 @@ export default async function QuotationDetailPage(props: {
             <section className="flex justify-between items-end">
               <div className="space-y-1 text-sm">
                 <p className="font-semibold text-muted-foreground">
-                  ผู้รับผิดชอบ:
+                  {t("responsiblePerson")}
                 </p>
                 <p className="font-semibold">
                   {quotation.responsible_persons?.name || "-"}
                 </p>
                 <p className="font-semibold text-muted-foreground mt-2">
-                  ประเภทราคา:
+                  {t("priceTier")}
                 </p>
                 <p className="font-semibold">
                   {getPriceTierLabel(quotation.price_tier)}
@@ -280,7 +313,7 @@ export default async function QuotationDetailPage(props: {
               </div>
               <div className="w-full max-w-sm space-y-2">
                 <div className="flex justify-between">
-                  <span>ยอดรวมก่อนภาษี</span>
+                  <span>{t("totalPriceBeforeVat")}</span>
                   <span>
                     ฿
                     {subTotal.toLocaleString("en-US", {
@@ -289,13 +322,13 @@ export default async function QuotationDetailPage(props: {
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span>ภาษีมูลค่าเพิ่ม (7%)</span>
+                  <span>{t("totalVat")}:</span>
                   <span>
                     ฿{vat.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex justify-between font-bold text-lg border-t pt-2">
-                  <span>ยอดรวมทั้งสิ้น</span>
+                  <span>{t("totalAmount")}</span>
                   <span>
                     ฿
                     {grandTotal.toLocaleString("en-US", {

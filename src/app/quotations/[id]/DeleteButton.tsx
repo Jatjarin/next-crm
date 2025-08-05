@@ -3,6 +3,7 @@
 import { deleteQuotation } from "../actions"
 import { Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useTranslations } from "next-intl"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog"
 
 export default function DeleteButton({ quotationId }: { quotationId: number }) {
+  const t = useTranslations("DeleteDialog")
   const deleteQuotationWithId = deleteQuotation.bind(null, quotationId)
 
   return (
@@ -23,23 +25,20 @@ export default function DeleteButton({ quotationId }: { quotationId: number }) {
       <AlertDialogTrigger asChild>
         <Button variant="destructive">
           <Trash2 size={16} className="mr-2" />
-          ลบ
+          {t("deleteQuotation")}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <form action={deleteQuotationWithId}>
           <AlertDialogHeader>
-            <AlertDialogTitle>คุณแน่ใจหรือไม่?</AlertDialogTitle>
-            <AlertDialogDescription>
-              การกระทำนี้ไม่สามารถย้อนกลับได้
-              ระบบจะทำการลบใบเสนอราคานี้อย่างถาวร
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t("title")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("description")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel type="button">ยกเลิก</AlertDialogCancel>
+            <AlertDialogCancel type="button">{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction asChild>
               <Button type="submit" variant="destructive">
-                ยืนยันการลบ
+                {t("confirm")}
               </Button>
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useState, useEffect } from "react"
+import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { updateQuotation } from "../../actions"
 import { Plus, Trash2, Check, ChevronsUpDown, Loader2 } from "lucide-react"
@@ -86,7 +87,7 @@ export default function QuotationForm({
   const [isPending, startTransition] = React.useTransition()
 
   const updateQuotationWithId = updateQuotation.bind(null, quotation.id)
-
+  const t = useTranslations("QuotationForm")
   useEffect(() => {
     const fetchProducts = async () => {
       const { data: productData } = await supabase
@@ -148,12 +149,12 @@ export default function QuotationForm({
 
       <Card>
         <CardHeader>
-          <CardTitle>ข้อมูลใบเสนอราคา</CardTitle>
+          <CardTitle>{t("cardTitle")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>ลูกค้า</Label>
+              <Label>{t("customerLabel")}:</Label>
               <Popover
                 open={openCustomerCombobox}
                 onOpenChange={setOpenCustomerCombobox}
@@ -168,7 +169,7 @@ export default function QuotationForm({
                       ? customers.find(
                           (c) => String(c.id) === selectedCustomerId
                         )?.name
-                      : "-- เลือกลูกค้า --"}
+                      : t("customerPlaceholder")}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
@@ -176,7 +177,7 @@ export default function QuotationForm({
                   <Command>
                     <CommandInput placeholder="ค้นหาลูกค้า..." />
                     <CommandList>
-                      <CommandEmpty>ไม่พบลูกค้า</CommandEmpty>
+                      <CommandEmpty>{t("searchCustomerNotfound")}</CommandEmpty>
                       <CommandGroup>
                         {customers.map((c) => (
                           <CommandItem
@@ -205,7 +206,7 @@ export default function QuotationForm({
               </Popover>
             </div>
             <div className="space-y-2">
-              <Label>ผู้รับผิดชอบ</Label>
+              <Label>{t("responsiblePersonLabel")}:</Label>
               <Popover
                 open={openResponsiblePersonCombobox}
                 onOpenChange={setOpenResponsiblePersonCombobox}
@@ -220,15 +221,17 @@ export default function QuotationForm({
                       ? responsiblePersons.find(
                           (p) => String(p.id) === selectedResponsiblePersonId
                         )?.name
-                      : "-- เลือกผู้รับผิดชอบ --"}
+                      : t("responsiblePersonPlaceholder")}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                   <Command>
-                    <CommandInput placeholder="ค้นหาผู้รับผิดชอบ..." />
+                    <CommandInput
+                      placeholder={t("responsiblePersonSearchPlaceholder")}
+                    />
                     <CommandList>
-                      <CommandEmpty>ไม่พบข้อมูล</CommandEmpty>
+                      <CommandEmpty>{t("notFound")}</CommandEmpty>
                       <CommandGroup>
                         {responsiblePersons.map((p) => (
                           <CommandItem
@@ -257,7 +260,9 @@ export default function QuotationForm({
               </Popover>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="quotationNumber">เลขที่ใบเสนอราคา</Label>
+              <Label htmlFor="quotationNumber">
+                {t("editFormQuotationNumber")}
+              </Label>
               <Input
                 id="quotationNumber"
                 name="quotationNumber"
@@ -266,7 +271,7 @@ export default function QuotationForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="issueDate">วันที่ออก</Label>
+              <Label htmlFor="issueDate">{t("issueDateLabel")}:</Label>
               <Input
                 id="issueDate"
                 name="issueDate"
@@ -276,7 +281,7 @@ export default function QuotationForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="expiryDate">วันที่หมดอายุ</Label>
+              <Label htmlFor="expiryDate">{t("expireDateLabel")}</Label>
               <Input
                 id="expiryDate"
                 name="expiryDate"
@@ -287,7 +292,7 @@ export default function QuotationForm({
             </div>
           </div>
           <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold mb-4">รายการ</h3>
+            <h3 className="text-lg font-semibold mb-4">{t("itemsTitle")}</h3>
             <div className="space-y-2">
               {items.map((item, index) => (
                 <div
@@ -305,7 +310,9 @@ export default function QuotationForm({
                       }}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="-- เลือกสินค้า --" />
+                        <SelectValue
+                          placeholder={t("productItemsPlaceholder")}
+                        />
                       </SelectTrigger>
                       <SelectContent>
                         {products.map((p) => (
@@ -318,7 +325,7 @@ export default function QuotationForm({
                   </div>
                   <Input
                     type="text"
-                    placeholder="หรือพิมพ์คำอธิบายเอง"
+                    placeholder={t("insertProductItemsPlaceholder")}
                     value={item.description}
                     onChange={(e) =>
                       handleItemChange(index, "description", e.target.value)
@@ -327,7 +334,7 @@ export default function QuotationForm({
                   />
                   <Input
                     type="number"
-                    placeholder="จำนวน"
+                    placeholder={t("quantityPlaceholder")}
                     value={item.quantity}
                     onChange={(e) =>
                       handleItemChange(index, "quantity", e.target.value)
@@ -336,7 +343,7 @@ export default function QuotationForm({
                   />
                   <Input
                     type="number"
-                    placeholder="ราคา/หน่วย (รวม VAT)"
+                    placeholder={t("unitPricePlaceholder")}
                     value={item.unitPrice}
                     onChange={(e) =>
                       handleItemChange(index, "unitPrice", e.target.value)
@@ -362,13 +369,13 @@ export default function QuotationForm({
               className="mt-2"
             >
               <Plus size={16} className="mr-2" />
-              เพิ่มรายการ
+              {t("addItem")}
             </Button>
           </div>
           <div className="flex justify-end mt-4">
             <div className="w-full max-w-sm space-y-2">
               <div className="flex justify-between">
-                <span>ยอดรวมก่อนภาษี</span>
+                <span>{t("totalAmountBeforeVat")}:</span>
                 <span>
                   ฿
                   {subTotal.toLocaleString("en-US", {
@@ -377,13 +384,13 @@ export default function QuotationForm({
                 </span>
               </div>
               <div className="flex justify-between">
-                <span>ภาษีมูลค่าเพิ่ม (7%)</span>
+                <span>{t("totalVat")}</span>
                 <span>
                   ฿{vat.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                 </span>
               </div>
               <div className="flex justify-between font-bold text-lg border-t pt-2">
-                <span>ยอดรวมทั้งสิ้น</span>
+                <span>{t("totalAmount")}</span>
                 <span>
                   ฿
                   {grandTotal.toLocaleString("en-US", {
@@ -396,11 +403,11 @@ export default function QuotationForm({
         </CardContent>
         <CardFooter className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={() => router.back()}>
-            ยกเลิก
+            {t("cancelButton")}
           </Button>
           <Button type="submit" disabled={isPending}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            บันทึกการเปลี่ยนแปลง
+            {t("saveQuotation")}
           </Button>
         </CardFooter>
       </Card>

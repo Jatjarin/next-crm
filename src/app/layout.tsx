@@ -1,18 +1,19 @@
 import type { Metadata } from "next"
-import { Sarabun } from "next/font/google" // แนะนำให้ใช้ Font ที่รองรับภาษาไทย
+import { Sarabun } from "next/font/google"
 import "./globals.css"
 import Sidebar from "@/components/Sidebar"
 import { createClient } from "@/lib/supabase/server"
+import { NextIntlClientProvider } from "next-intl"
+import { getLocale, getMessages } from "next-intl/server"
 
-// ตั้งค่า Font
 const sarabun = Sarabun({
   subsets: ["latin", "thai"],
   weight: ["400", "700"],
 })
 
 export const metadata: Metadata = {
-  title: "EAZY Erp",
-  description: "EAZY erp for SAK Woodworks",
+  title: "MyERP with Next.js",
+  description: "ERP Application",
 }
 
 export default async function RootLayout({
@@ -20,26 +21,27 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  // สร้างการเชื่อมต่อ Supabase บน Server
   const supabase = await createClient()
-  // ดึงข้อมูลผู้ใช้ปัจจุบันเพื่อตรวจสอบสถานะการล็อกอิน
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
+  const locale = await getLocale()
+  const messages = await getMessages()
+
   return (
-    <html lang="th">
+    <html lang={locale}>
       <body className={sarabun.className}>
-        {user ? (
-          // --- Layout สำหรับผู้ใช้ที่ล็อกอินแล้ว ---
-          <div className="flex bg-gray-100 font-sans">
-            <Sidebar />
-            <main className="flex-1">{children}</main>
-          </div>
-        ) : (
-          // --- Layout สำหรับผู้ใช้ที่ยังไม่ได้ล็อกอิน (เช่น หน้า Login) ---
-          <div className="bg-gray-100 font-sans">{children}</div>
-        )}
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          {user ? (
+            <div className="flex bg-gray-100 font-sans">
+              <Sidebar />
+              <main className="flex-1">{children}</main>
+            </div>
+          ) : (
+            <div className="bg-gray-100 font-sans">{children}</div>
+          )}
+        </NextIntlClientProvider>
       </body>
     </html>
   )

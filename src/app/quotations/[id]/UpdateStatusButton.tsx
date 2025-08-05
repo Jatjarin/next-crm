@@ -2,6 +2,7 @@
 
 import { updateQuotationStatus } from "../actions"
 import { useTransition } from "react"
+import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, Send, XCircle, Ban, Loader2 } from "lucide-react"
@@ -17,6 +18,7 @@ export default function UpdateStatusButton({
 }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  const t = useTranslations("UpdateStatusButton")
 
   const handleUpdateStatus = (newStatus: string) => {
     startTransition(async () => {
@@ -42,7 +44,7 @@ export default function UpdateStatusButton({
         ) : (
           <XCircle size={20} className="mr-2" />
         )}
-        {currentStatus === "Accepted" ? "อนุมัติแล้ว" : "ไม่อนุมัติ"}
+        {currentStatus === "Accepted" ? t("accepted") : t("rejected")}
       </span>
     )
   }

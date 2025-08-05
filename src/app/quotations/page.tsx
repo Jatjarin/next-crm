@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import Link from "next/link"
 import { Plus } from "lucide-react"
+import { getTranslations } from "next-intl/server"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -33,19 +34,33 @@ interface Quotation {
   customers: { name: string } | null
 }
 
-const getStatusBadge = (status: string) => {
+const getStatusBadgeVariant = (status: string) => {
   switch (status) {
     case "Accepted":
-      return <Badge variant="success">อนุมัติแล้ว</Badge>
+      return "success"
     case "Sent":
-      return <Badge variant="default">ส่งแล้ว</Badge>
+      return "default"
     case "Rejected":
-      return <Badge variant="destructive">ไม่อนุมัติ</Badge>
+      return "destructive"
     case "Draft":
     default:
-      return <Badge variant="secondary">ฉบับร่าง</Badge>
+      return "secondary"
   }
 }
+
+// const getStatusBadge = (status: string) => {
+//   switch (status) {
+//     case "Accepted":
+//       return <Badge variant="success">อนุมัติแล้ว</Badge>
+//     case "Sent":
+//       return <Badge variant="default">ส่งแล้ว</Badge>
+//     case "Rejected":
+//       return <Badge variant="destructive">ไม่อนุมัติ</Badge>
+//     case "Draft":
+//     default:
+//       return <Badge variant="secondary">ฉบับร่าง</Badge>
+//   }
+// }
 
 const formatDate = (dateString: string) =>
   new Date(dateString).toLocaleDateString("th-TH", {
@@ -60,6 +75,9 @@ const calculateTotal = (items: QuotationItem[]): number =>
   ) || 0
 
 export default async function QuotationsPage() {
+  const t = await getTranslations("QuotationsPage")
+  const tStatus = await getTranslations("QuotationStatus")
+
   const supabase = await createClient()
 
   const { data: quotations, error } = await supabase
@@ -78,27 +96,27 @@ export default async function QuotationsPage() {
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">ใบเสนอราคา</h1>
+        <h1 className="text-3xl font-bold">{t("title")}</h1>
         <Button asChild>
           <Link href="/quotations/new">
-            <Plus size={20} className="mr-2" /> สร้างใบเสนอราคาใหม่
+            <Plus size={20} className="mr-2" /> {t("addNew")}
           </Link>
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>รายการใบเสนอราคาทั้งหมด</CardTitle>
+          <CardTitle>{t("tableHeaderTitle")}</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>เลขที่ใบเสนอราคา</TableHead>
-                <TableHead>ลูกค้า</TableHead>
-                <TableHead>วันที่ออก</TableHead>
-                <TableHead className="text-right">ยอดรวม</TableHead>
-                <TableHead className="text-center">สถานะ</TableHead>
+                <TableHead>{t("tableHeaderNumber")}</TableHead>
+                <TableHead>{t("tableHeaderCustomer")}</TableHead>
+                <TableHead>{t("tableHeaderIssueDate")}</TableHead>
+                <TableHead className="text-right">{t("tableHeaderTotal")}</TableHead>
+                <TableHead className="text-center">{t("tableHeaderStatus")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -123,7 +141,9 @@ export default async function QuotationsPage() {
                     })}
                   </TableCell>
                   <TableCell className="text-center">
-                    {getStatusBadge(quote.status)}
+                    <Badge variant={getStatusBadgeVariant(quote.status)}>
+                      {tStatus(quote.status.toLowerCase() as string)}
+                    </Badge>
                   </TableCell>
                 </TableRow>
               ))}

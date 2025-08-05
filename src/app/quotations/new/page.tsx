@@ -3,6 +3,7 @@
 import * as React from "react"
 import { useState, useEffect, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { createClient } from "@/lib/supabase/client"
 import { addQuotation, generateNextQuotationNumber } from "../actions"
 import { Plus, Trash2, Check, ChevronsUpDown, Loader2 } from "lucide-react"
@@ -57,6 +58,7 @@ const priceTiers = [
 ]
 
 export default function NewQuotationPage() {
+  const t = useTranslations("QuotationForm")
   const router = useRouter()
   const supabase = createClient()
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -131,7 +133,7 @@ export default function NewQuotationPage() {
           setQuotationNumber("Error generating number")
         }
       } else {
-        setQuotationNumber("กรุณาเลือกผู้รับผิดชอบและประเภทราคา")
+        setQuotationNumber(t("quotationNumberPlaceholder"))
       }
     }
     generateNumber()
@@ -190,7 +192,7 @@ export default function NewQuotationPage() {
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold mb-6">สร้างใบเสนอราคาใหม่</h1>
+      <h1 className="text-3xl font-bold mb-6">{t("createTitle")}</h1>
       <form action={handleFormSubmit}>
         <input type="hidden" name="customerId" value={selectedCustomerId} />
         <input
@@ -203,12 +205,12 @@ export default function NewQuotationPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>ข้อมูลใบเสนอราคา</CardTitle>
+            <CardTitle>{t("cardTitle")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>ลูกค้า</Label>
+                <Label>{t("customerLabel")}</Label>
                 <Popover
                   open={openCustomerCombobox}
                   onOpenChange={setOpenCustomerCombobox}
@@ -223,15 +225,19 @@ export default function NewQuotationPage() {
                         ? customers.find(
                             (c) => String(c.id) === selectedCustomerId
                           )?.name
-                        : "-- เลือกลูกค้า --"}
+                        : t("customerPlaceholder")}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                     <Command>
-                      <CommandInput placeholder="ค้นหาลูกค้า..." />
+                      <CommandInput
+                        placeholder={t("searchCustomerPlaceholder")}
+                      />
                       <CommandList>
-                        <CommandEmpty>ไม่พบลูกค้า</CommandEmpty>
+                        <CommandEmpty>
+                          {t("searchCustomerNotfound")}
+                        </CommandEmpty>
                         <CommandGroup>
                           {customers.map((c) => (
                             <CommandItem
@@ -260,14 +266,16 @@ export default function NewQuotationPage() {
                 </Popover>
               </div>
               <div className="space-y-2">
-                <Label>ผู้รับผิดชอบ</Label>
+                <Label>{t("responsiblePersonLabel")}</Label>
                 <Select
                   required
                   value={selectedResponsiblePersonId}
                   onValueChange={setSelectedResponsiblePersonId}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="-- เลือกผู้รับผิดชอบ --" />
+                    <SelectValue
+                      placeholder={t("responsiblePersonPlaceholder")}
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {responsiblePersons.map((p) => (
@@ -279,14 +287,14 @@ export default function NewQuotationPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>ประเภทใบเสนอราคา</Label>
+                <Label>{t("quotionTypeLabel")}</Label>
                 <Select
                   required
                   value={selectedPriceTier}
                   onValueChange={setSelectedPriceTier}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="-- เลือกประเภทใบเสนอราคา --" />
+                    <SelectValue placeholder={t("quotionTypePlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {priceTiers.map((p) => (
@@ -299,7 +307,7 @@ export default function NewQuotationPage() {
               </div>
               <div className="space-y-2 lg:col-span-3">
                 <Label htmlFor="quotationNumberDisplay">
-                  เลขที่ใบเสนอราคา (อัตโนมัติ)
+                  {t("quotationNumberLabel")}
                 </Label>
                 <Input
                   id="quotationNumberDisplay"
@@ -309,7 +317,7 @@ export default function NewQuotationPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="issueDate">วันที่ออก</Label>
+                <Label htmlFor="issueDate">{t("issueDateLabel")}</Label>
                 <Input
                   type="date"
                   id="issueDate"
@@ -319,12 +327,12 @@ export default function NewQuotationPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="expiryDate">วันที่หมดอายุ</Label>
+                <Label htmlFor="expiryDate">{t("expireDateLabel")}</Label>
                 <Input type="date" id="expiryDate" name="expiryDate" required />
               </div>
             </div>
             <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold mb-4">รายการ</h3>
+              <h3 className="text-lg font-semibold mb-4">{t("itemsTitle")}</h3>
               <div className="space-y-2">
                 {items.map((item, index) => (
                   <div
@@ -342,7 +350,9 @@ export default function NewQuotationPage() {
                         }}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="-- เลือกสินค้า --" />
+                          <SelectValue
+                            placeholder={t("productItemsPlaceholder")}
+                          />
                         </SelectTrigger>
                         <SelectContent>
                           {products.map((p) => (
@@ -355,7 +365,7 @@ export default function NewQuotationPage() {
                     </div>
                     <Input
                       type="text"
-                      placeholder="หรือพิมพ์คำอธิบายเอง"
+                      placeholder={t("insertProductItemsPlaceholder")}
                       value={item.description}
                       onChange={(e) =>
                         handleItemChange(index, "description", e.target.value)
@@ -364,7 +374,7 @@ export default function NewQuotationPage() {
                     />
                     <Input
                       type="number"
-                      placeholder="จำนวน"
+                      placeholder={t("quantityPlaceholder")}
                       value={item.quantity}
                       onChange={(e) =>
                         handleItemChange(index, "quantity", e.target.value)
@@ -373,7 +383,7 @@ export default function NewQuotationPage() {
                     />
                     <Input
                       type="number"
-                      placeholder="ราคา/หน่วย (รวม VAT)"
+                      placeholder={t("unitPricePlaceholder")}
                       value={item.unitPrice}
                       onChange={(e) =>
                         handleItemChange(index, "unitPrice", e.target.value)
@@ -399,13 +409,13 @@ export default function NewQuotationPage() {
                 className="mt-2"
               >
                 <Plus size={16} className="mr-2" />
-                เพิ่มรายการ
+                {t("addItem")}
               </Button>
             </div>
             <div className="flex justify-end mt-4">
               <div className="w-full max-w-xs space-y-2">
                 <div className="flex justify-between">
-                  <span>ยอดรวมก่อนภาษี</span>
+                  <span>{t("totalAmountBeforeVat")}:</span>
                   <span>
                     ฿
                     {subTotal.toLocaleString("en-US", {
@@ -414,13 +424,13 @@ export default function NewQuotationPage() {
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span>ภาษีมูลค่าเพิ่ม (7%)</span>
+                  <span>{t("totalVat")}:</span>
                   <span>
                     ฿{vat.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex justify-between font-bold text-lg border-t pt-2">
-                  <span>ยอดรวมทั้งสิ้น</span>
+                  <span>{t("totalAmount")}:</span>
                   <span>
                     ฿
                     {grandTotal.toLocaleString("en-US", {
@@ -433,11 +443,11 @@ export default function NewQuotationPage() {
           </CardContent>
           <CardFooter className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => router.back()}>
-              ยกเลิก
+              {t("cancelButton")}
             </Button>
             <Button type="submit" disabled={isPending}>
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              บันทึกฉบับร่าง
+              {t("saveDraftButton")}
             </Button>
           </CardFooter>
         </Card>

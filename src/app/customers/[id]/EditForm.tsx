@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useTranslations } from "next-intl"
 import { updateCustomer } from "../actions"
 import { Button } from "@/components/ui/button"
 import {
@@ -32,6 +33,7 @@ interface Props {
 }
 
 export default function EditForm({ customer }: Props) {
+  const t = useTranslations("EditCustomerForm")
   // 1. เพิ่ม State เพื่อจัดการโหมดการแก้ไข
   const [isEditing, setIsEditing] = useState(false)
   const updateCustomerWithId = updateCustomer.bind(null, customer.id)
@@ -42,7 +44,7 @@ export default function EditForm({ customer }: Props) {
       <div className="mt-6">
         <Button onClick={() => setIsEditing(true)}>
           <Pencil className="mr-2 h-4 w-4" />
-          แก้ไขข้อมูลลูกค้า
+          {t("buttonTitle")}
         </Button>
       </div>
     )
@@ -53,15 +55,13 @@ export default function EditForm({ customer }: Props) {
     <form action={updateCustomerWithId}>
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle>แก้ไขข้อมูลลูกค้า</CardTitle>
-          <CardDescription>
-            ปรับปรุงข้อมูลของลูกค้าให้เป็นปัจจุบัน
-          </CardDescription>
+          <CardTitle>{t("dialogTitle")}</CardTitle>
+          <CardDescription>{t("dialogDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label htmlFor="name">ชื่อลูกค้า/บริษัท</Label>
+              <Label htmlFor="name">{t("customerNameLabel")}</Label>
               <Input
                 id="name"
                 name="name"
@@ -70,7 +70,7 @@ export default function EditForm({ customer }: Props) {
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="taxId">เลขประจำตัวผู้เสียภาษี</Label>
+              <Label htmlFor="taxId">{t("taxId")}</Label>
               <Input
                 id="taxId"
                 name="taxId"
@@ -79,7 +79,7 @@ export default function EditForm({ customer }: Props) {
             </div>
           </div>
           <div className="space-y-1">
-            <Label htmlFor="address">ที่อยู่</Label>
+            <Label htmlFor="address">{t("address")}</Label>
             <Textarea
               id="address"
               name="address"
@@ -88,7 +88,7 @@ export default function EditForm({ customer }: Props) {
           </div>
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label htmlFor="phone">เบอร์โทร</Label>
+              <Label htmlFor="phone">{t("phone")}</Label>
               <Input
                 id="phone"
                 name="phone"
@@ -96,7 +96,7 @@ export default function EditForm({ customer }: Props) {
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="lineId">LINE ID</Label>
+              <Label htmlFor="lineId">{t("lineId")}</Label>
               <Input
                 id="lineId"
                 name="lineId"
@@ -105,7 +105,7 @@ export default function EditForm({ customer }: Props) {
             </div>
           </div>
           <div className="space-y-1">
-            <Label htmlFor="responsiblePerson">ผู้รับผิดชอบ</Label>
+            <Label htmlFor="responsiblePerson">{t("dialogResponsible")}</Label>
             <Input
               id="responsiblePerson"
               name="responsiblePerson"
@@ -120,9 +120,9 @@ export default function EditForm({ customer }: Props) {
             variant="ghost"
             onClick={() => setIsEditing(false)}
           >
-            ยกเลิก
+            {t("buttonCancel")}
           </Button>
-          <Button type="submit">บันทึกการเปลี่ยนแปลง</Button>
+          <Button type="submit">{t("buttonSave")}</Button>
         </CardFooter>
       </Card>
     </form>

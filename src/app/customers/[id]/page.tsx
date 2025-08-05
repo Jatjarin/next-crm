@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server"
 import { notFound } from "next/navigation"
 import Link from "next/link"
+import { getTranslations } from "next-intl/server"
+
 import EditForm from "./EditForm"
 import DeleteButton from "./DeleteButton"
 import {
@@ -51,17 +53,17 @@ const calculateTotal = (items: InvoiceItem[]): number =>
     (sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0),
     0
   ) || 0
-const getStatusBadge = (status: string) => {
+const getStatusBadgeVariant = (status: string) => {
   switch (status) {
     case "Paid":
-      return <Badge variant="success">ชำระแล้ว</Badge>
+      return "success"
     case "Sent":
-      return <Badge variant="default">ส่งแล้ว</Badge>
+      return "default"
     case "Overdue":
-      return <Badge variant="destructive">ค้างชำระ</Badge>
+      return "destructive"
     case "Draft":
     default:
-      return <Badge variant="secondary">ฉบับร่าง</Badge>
+      return "secondary"
   }
 }
 
@@ -71,6 +73,9 @@ export default async function CustomerDetailPage(props: {
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   // Await params เพื่อดึงค่า id ออกมา
+  // ดึงฟังก์ชันแปลภาษาสำหรับ Server Component
+  const t = await getTranslations("CustomerDetailPage")
+  const tStatus = await getTranslations("StatusKeys")
   const params = await props.params
   const { id } = params
 
@@ -111,11 +116,11 @@ export default async function CustomerDetailPage(props: {
             className="text-sm text-muted-foreground hover:underline flex items-center mb-2"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            กลับไปหน้ารายชื่อลูกค้า
+            {t("backLink")}
           </Link>
           <h1 className="text-3xl font-bold">{typedCustomer.name}</h1>
           <p className="text-muted-foreground">
-            ผู้รับผิดชอบ: {typedCustomer.responsible_person || "-"}
+            {t("responsiblePerson")}: {typedCustomer.responsible_person || "-"}
           </p>
         </div>
         <DeleteButton customerId={typedCustomer.id} />
@@ -123,29 +128,25 @@ export default async function CustomerDetailPage(props: {
 
       <Card>
         <CardHeader>
-          <CardTitle>ข้อมูลติดต่อ</CardTitle>
-          <CardDescription>
-            รายละเอียดการติดต่อและข้อมูลทางภาษีของลูกค้า
-          </CardDescription>
+          <CardTitle>{t("contactInfoTitle")}</CardTitle>
+          <CardDescription>{t("contactInfoDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
-              <p className="font-medium text-gray-500">
-                เลขประจำตัวผู้เสียภาษี
-              </p>
+              <p className="font-medium text-gray-500">{t("taxId")}</p>
               <p>{typedCustomer.tax_id || "-"}</p>
             </div>
             <div>
-              <p className="font-medium text-gray-500">เบอร์โทร</p>
+              <p className="font-medium text-gray-500">{t("phone")}</p>
               <p>{typedCustomer.phone || "-"}</p>
             </div>
             <div>
-              <p className="font-medium text-gray-500">LINE ID</p>
+              <p className="font-medium text-gray-500">{t("lineId")}</p>
               <p>{typedCustomer.line_id || "-"}</p>
             </div>
             <div className="md:col-span-2">
-              <p className="font-medium text-gray-500">ที่อยู่</p>
+              <p className="font-medium text-gray-500">{t("address")}</p>
               <p>{typedCustomer.address || "-"}</p>
             </div>
           </div>
@@ -154,19 +155,19 @@ export default async function CustomerDetailPage(props: {
 
       <Card>
         <CardHeader>
-          <CardTitle>ประวัติใบแจ้งหนี้</CardTitle>
-          <CardDescription>
-            รายการใบแจ้งหนี้ทั้งหมดของลูกค้ารายนี้
-          </CardDescription>
+          <CardTitle>{t("invoiceHistoryTitle")}</CardTitle>
+          <CardDescription>{t("invoiceHistoryDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>เลขที่ Invoice</TableHead>
-                <TableHead>วันที่ออก</TableHead>
-                <TableHead className="text-right">ยอดรวม</TableHead>
-                <TableHead className="text-center">สถานะ</TableHead>
+                <TableHead>{t("tableInvoiceNo")}</TableHead>
+                <TableHead>{t("tableIssueDate")}</TableHead>
+                <TableHead className="text-right">{t("tableTotal")}</TableHead>
+                <TableHead className="text-center">
+                  {t("tableStatus")}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -189,7 +190,9 @@ export default async function CustomerDetailPage(props: {
                       })}
                     </TableCell>
                     <TableCell className="text-center">
-                      {getStatusBadge(invoice.status)}
+                      <Badge variant={getStatusBadgeVariant(invoice.status)}>
+                        {tStatus(invoice.status.toLowerCase() as string)}
+                      </Badge>
                     </TableCell>
                   </TableRow>
                 ))
@@ -199,7 +202,7 @@ export default async function CustomerDetailPage(props: {
                     colSpan={4}
                     className="text-center text-muted-foreground"
                   >
-                    ไม่พบข้อมูลใบแจ้งหนี้
+                    {t("noInvoicesFound")}
                   </TableCell>
                 </TableRow>
               )}

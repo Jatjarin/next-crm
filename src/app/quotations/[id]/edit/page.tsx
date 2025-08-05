@@ -3,12 +3,14 @@ import { notFound } from "next/navigation"
 import QuotationForm from "./QuotationForm" // เราจะสร้าง Component นี้ต่อไป
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
+import { getTranslations } from "next-intl/server"
 
 type Props = {
   params: Promise<{ id: string }>
 }
 
 export default async function EditQuotationPage({ params }: Props) {
+  const t = await getTranslations("QuotationForm")
   const supabase = await createClient()
   const { id } = await params
   // ดึงข้อมูลทั้ง 3 ส่วนพร้อมกันเพื่อประสิทธิภาพสูงสุด
@@ -48,10 +50,10 @@ export default async function EditQuotationPage({ params }: Props) {
         className="text-sm text-muted-foreground hover:underline flex items-center mb-4"
       >
         <ArrowLeft className="w-4 h-4 mr-2" />
-        กลับไปหน้ารายละเอียดใบเสนอราคา
+        {t("backLink")}
       </Link>
       <h1 className="text-3xl font-bold mb-6">
-        แก้ไขใบเสนอราคา #{quotation.quotation_number}
+        {t("editTitle")} #{quotation.quotation_number}
       </h1>
 
       {/* ส่งข้อมูลทั้งหมดไปให้ฟอร์ม */}

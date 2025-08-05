@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { notFound } from "next/navigation"
 import Link from "next/link"
+import { getTranslations } from "next-intl/server"
 import Image from "next/image"
 import UpdateStatusButton from "./UpdateStatusButton"
 import InvoicePrintDropdown from "./InvoicePrintDropdown"
@@ -44,19 +45,34 @@ type Invoice = {
 // }
 
 // --- Helper Functions ---
-const getStatusBadge = (status: string) => {
+// const getStatusBadge = (status: string) => {
+//   switch (status) {
+//     case "Paid":
+//       return <Badge variant="success">ชำระแล้ว</Badge>
+//     case "Sent":
+//       return <Badge variant="default">ส่งแล้ว</Badge>
+//     case "Overdue":
+//       return <Badge variant="destructive">ค้างชำระ</Badge>
+//     case "Draft":
+//     default:
+//       return <Badge variant="secondary">ฉบับร่าง</Badge>
+//   }
+// }
+
+const getStatusBadgeVariant = (status: string) => {
   switch (status) {
     case "Paid":
-      return <Badge variant="success">ชำระแล้ว</Badge>
+      return "success"
     case "Sent":
-      return <Badge variant="default">ส่งแล้ว</Badge>
+      return "default"
     case "Overdue":
-      return <Badge variant="destructive">ค้างชำระ</Badge>
+      return "destructive"
     case "Draft":
     default:
-      return <Badge variant="secondary">ฉบับร่าง</Badge>
+      return "secondary"
   }
 }
+
 const formatDate = (dateString: string) =>
   new Date(dateString).toLocaleDateString("th-TH", {
     year: "numeric",
@@ -90,7 +106,8 @@ export default async function InvoiceDetailPage(props: {
   // Await params เพื่อดึงค่า id ออกมา
   const params = await props.params
   const { id } = params
-
+  const t = await getTranslations("InvoiceDetailPage")
+  const tStatus = await getTranslations("InvoiceStatus")
   const supabase = await createClient()
   // --- ดึงข้อมูล Settings และ Invoice พร้อมกัน ---
   const [invoiceRes, settingsRes] = await Promise.all([
@@ -131,10 +148,12 @@ export default async function InvoiceDetailPage(props: {
               className="text-sm text-muted-foreground hover:underline flex items-center mb-2"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              กลับไปหน้ารายการ Invoice
+              {t("backLink")}
             </Link>
             <h1 className="text-3xl font-bold">
-              ใบแจ้งหนี้ #{invoice.invoice_number}
+              {t("invoiceHeader")}
+              <br />
+              {invoice.invoice_number}
             </h1>
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">
@@ -143,7 +162,7 @@ export default async function InvoiceDetailPage(props: {
             <InvoicePrintDropdown invoiceNumber={invoice.invoice_number} />
             <Button asChild variant="outline">
               <Link href={`/invoices/${invoice.id}/edit`}>
-                <Pencil size={16} className="mr-2" /> แก้ไข
+                <Pencil size={16} className="mr-2" /> {t("editButton")}
               </Link>
             </Button>
             <DeleteInvoiceButton invoiceId={invoice.id} />
@@ -184,16 +203,18 @@ export default async function InvoiceDetailPage(props: {
               <p className="text-muted-foreground">#{invoice.invoice_number}</p>
               <div className="mt-4 space-y-1 text-sm">
                 <p className="invoice-issue-date flex justify-between gap-4">
-                  <strong>วันที่ออก:</strong>{" "}
+                  <strong>{t("issueDate")}</strong>{" "}
                   <span>{formatDate(invoice.issue_date)}</span>
                 </p>
                 <p className="invoice-due-date flex justify-between gap-4">
-                  <strong>ครบกำหนดชำระ:</strong>{" "}
+                  <strong>{t("dueDate")}</strong>{" "}
                   <span>{formatDate(invoice.due_date)}</span>
                 </p>
                 <div className="mt-2 invoice-status flex justify-between gap-4">
-                  <strong>สถานะ:</strong>{" "}
-                  <span>{getStatusBadge(invoice.status)}</span>
+                  <strong>{t("invoiceStatus")}</strong>{" "}
+                  <Badge variant={getStatusBadgeVariant(invoice.status)}>
+                    {tStatus(invoice.status.toLowerCase() as string)}
+                  </Badge>
                 </div>
               </div>
             </div>
@@ -201,7 +222,9 @@ export default async function InvoiceDetailPage(props: {
         </header>
         <section className="mb-8">
           <div className="space-y-1">
-            <p className="font-semibold text-muted-foreground">ลูกค้า:</p>
+            <p className="font-semibold text-muted-foreground">
+              {t("invoiceCustomer")}
+            </p>
             <p className="text-lg font-semibold customer-name">
               {invoice.customers?.name}
             </p>
@@ -209,7 +232,7 @@ export default async function InvoiceDetailPage(props: {
               {invoice.customers?.address}
             </p>
             <p className="text-sm text-muted-foreground customer-tax-id">
-              เลขประจำตัวผู้เสียภาษี: {invoice.customers?.tax_id || "-"}
+              {t("invoiceTaxID")} {invoice.customers?.tax_id || "-"}
             </p>
           </div>
         </section>
@@ -217,12 +240,16 @@ export default async function InvoiceDetailPage(props: {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>รายการ</TableHead>
-                <TableHead className="text-center">จำนวน</TableHead>
-                <TableHead className="text-right">
-                  ราคา/หน่วย (รวม VAT)
+                <TableHead>{t("tableHeaderItem")}</TableHead>
+                <TableHead className="text-center">
+                  {t("tableHeaderQuantity")}
                 </TableHead>
-                <TableHead className="text-right">รวม</TableHead>
+                <TableHead className="text-right">
+                  {t("tableHeaderUnitPrice")}
+                </TableHead>
+                <TableHead className="text-right">
+                  {t("tableHeaderTotal")}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -254,12 +281,14 @@ export default async function InvoiceDetailPage(props: {
         <section className="flex justify-between items-end">
           {/* --- ย้ายข้อมูลมาไว้ที่นี่ (ด้านซ้ายล่าง) --- */}
           <div className="space-y-1 text-sm">
-            <p className="font-semibold text-muted-foreground">ผู้รับผิดชอบ:</p>
+            <p className="font-semibold text-muted-foreground">
+              {t("responsiblePerson")}
+            </p>
             <p className="font-semibold responsible-person-name">
               {invoice.responsible_persons?.name || "-"}
             </p>
             <p className="font-semibold text-muted-foreground mt-2">
-              ประเภทราคา:
+              {t("priceTier")}
             </p>
             <p className="font-semibold price-tier-name">
               {getPriceTierLabel(invoice.price_tier)}
@@ -269,20 +298,20 @@ export default async function InvoiceDetailPage(props: {
           {/* ส่วนสรุปยอดเงิน */}
           <div className="w-full max-w-sm space-y-2">
             <div className="flex justify-between">
-              <span>ยอดรวมก่อนภาษี</span>
+              <span>{t("totalPriceBeforeVat")}</span>
               <span>
                 ฿
                 {subTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}
               </span>
             </div>
             <div className="flex justify-between">
-              <span>ภาษีมูลค่าเพิ่ม (7%)</span>
+              <span>{t("totalVat")}</span>
               <span>
                 ฿{vat.toLocaleString("en-US", { minimumFractionDigits: 2 })}
               </span>
             </div>
             <div className="flex justify-between font-bold text-lg border-t pt-2">
-              <span>ยอดรวมทั้งสิ้น</span>
+              <span>{t("totalAmount")}</span>
               <span>
                 ฿
                 {grandTotal.toLocaleString("en-US", {
