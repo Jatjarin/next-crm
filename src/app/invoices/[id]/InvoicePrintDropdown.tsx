@@ -1,3 +1,18 @@
+/**
+ * InvoicePrintDropdown Component - เมนูแบบเลื่อนลงสำหรับพิมพ์ใบแจ้งหนี้
+ *
+ * คอมโพเนนต์สำหรับพิมพ์ใบแจ้งหนี้แบบมีตัวเลือก:
+ * - ต้นฉบับ (Original) - สำหรับลูกค้า
+ * - สำเนา (Copy) - สำหรับกิจการ
+ *
+ * @param invoiceNumber - หมายเลขใบแจ้งหนี้
+ *
+ * คุณสมบัติ:
+ * 1. แสดงเมนู dropdown ให้เลือกประเภทเอกสาร
+ * 2. พิมพ์เอกสารพร้อมข้อความระบุประเภท (ต้นฉบับ/สำเนา)
+ * 3. รองรับฟอนต์ภาษาไทย (Sarabun)
+ * 4. จัดรูปแบบที่เหมาะสมสำหรับการพิมพ์
+ */
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -16,6 +31,7 @@ interface Props {
 }
 
 export default function InvoicePrintDropdown({ invoiceNumber }: Props) {
+  // State สำหรับจัดการสถานะการโหลดระหว่างเตรียมการพิมพ์
   const [isGenerating, setIsGenerating] = useState(false)
   const t = useTranslations("PrintButton")
   // ฟังก์ชันสำหรับ "อ่าน" ข้อมูลจากหน้าเว็บแล้วสร้างเป็น HTML สำหรับพิมพ์
@@ -142,9 +158,22 @@ export default function InvoicePrintDropdown({ invoiceNumber }: Props) {
         `
   }
 
+  /**
+   * ฟังก์ชันจัดการการพิมพ์เอกสาร
+   *
+   * @param type - ประเภทของเอกสาร ("Original" = ต้นฉบับ, "Copy" = สำเนา)
+   *
+   * ขั้นตอนการทำงาน:
+   * 1. ค้นหา element ที่มีข้อมูลใบแจ้งหนี้
+   * 2. เปิดหน้าต่างใหม่สำหรับแสดงเอกสาร
+   * 3. สร้าง HTML พร้อมระบุประเภทเอกสาร (ต้นฉบับ/สำเนา)
+   * 4. ใช้ฟอนต์ Sarabun จาก Google Fonts สำหรับภาษาไทย
+   * 5. เรียกใช้ window.print() อัตโนมัติ
+   */
   const handlePrint = (type: "Original" | "Copy") => {
     setIsGenerating(true)
 
+    // ค้นหา element ที่เก็บข้อมูลใบแจ้งหนี้
     const invoiceElement = document.getElementById("printable-area")
     if (!invoiceElement) {
       alert("ไม่พบส่วนของใบแจ้งหนี้ที่สามารถพิมพ์ได้")
@@ -152,6 +181,7 @@ export default function InvoicePrintDropdown({ invoiceNumber }: Props) {
       return
     }
 
+    // เปิดหน้าต่างใหม่สำหรับแสดงเอกสารที่จะพิมพ์
     const printWindow = window.open("", "_blank")
     if (!printWindow) {
       alert("กรุณาอนุญาตให้เปิด popup window")
@@ -221,6 +251,7 @@ export default function InvoicePrintDropdown({ invoiceNumber }: Props) {
 
   return (
     <DropdownMenu>
+      {/* ปุ่มเปิดเมนู dropdown พร้อมไอคอนเครื่องพิมพ์ */}
       <DropdownMenuTrigger asChild>
         <Button variant="outline" disabled={isGenerating}>
           {isGenerating ? (
@@ -232,10 +263,13 @@ export default function InvoicePrintDropdown({ invoiceNumber }: Props) {
           <ChevronDown size={16} className="ml-2" />
         </Button>
       </DropdownMenuTrigger>
+      {/* เมนูตัวเลือกการพิมพ์ */}
       <DropdownMenuContent align="end">
+        {/* ตัวเลือก: พิมพ์ต้นฉบับ (สำหรับลูกค้า) */}
         <DropdownMenuItem onClick={() => handlePrint("Original")}>
           {t("originalText")}
         </DropdownMenuItem>
+        {/* ตัวเลือก: พิมพ์สำเนา (สำหรับกิจการ) */}
         <DropdownMenuItem onClick={() => handlePrint("Copy")}>
           {t("copyText")}
         </DropdownMenuItem>

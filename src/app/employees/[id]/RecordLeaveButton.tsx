@@ -1,3 +1,24 @@
+/**
+ * RecordLeaveButton Component - ปุ่มบันทึกการลาของพนักงาน
+ *
+ * คอมโพเนนต์สำหรับบันทึกการลาของพนักงานและหักลบวันลาคงเหลือโดยอัตโนมัติ
+ *
+ * @param employeeId - รหัสพนักงานที่ต้องการบันทึกการลา
+ * @param leaveBalances - รายการประเภทการลาและยอดคงเหลือของพนักงาน
+ *
+ * คุณสมบัติ:
+ * - เลือกประเภทการลา (ลาป่วย, ลากิจ, ลาพักร้อน ฯลฯ)
+ * - ระบุจำนวนวันที่ลา (รองรับ 0.5 วัน สำหรับลาครึ่งวัน)
+ * - เลือกวันที่ลา
+ * - ระบุเหตุผลการลา (ถ้ามี)
+ * - หักลบยอดวันลาคงเหลือโดยอัตโนมัติ
+ *
+ * การทำงาน:
+ * 1. แสดง Dialog form สำหรับกรอกข้อมูลการลา
+ * 2. ตรวจสอบความถูกต้องของข้อมูล
+ * 3. บันทึกข้อมูลและหักยอดวันลาคงเหลือ
+ * 4. แสดงผลสำเร็จและปิด Dialog
+ */
 "use client"
 
 import { useState, useTransition } from "react"
@@ -12,13 +33,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-// import {
-//   Select,
-//   SelectContent,
-//   SelectItem,
-//   SelectTrigger,
-//   SelectValue,
-// } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -42,9 +56,11 @@ export default function RecordLeaveButton({
   employeeId,
   leaveBalances,
 }: Props) {
+  // State สำหรับจัดการการเปิด/ปิด Dialog
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
 
+  // State สำหรับเก็บข้อมูลฟอร์ม
   const [selectedLeaveTypeId, setSelectedLeaveTypeId] = useState<string>("")
   const [daysTaken, setDaysTaken] = useState<string>("")
   const [leaveDate, setLeaveDate] = useState<string>(
@@ -52,6 +68,10 @@ export default function RecordLeaveButton({
   )
   const [reason, setReason] = useState<string>("")
 
+  /**
+   * ฟังก์ชันรีเซ็ตฟอร์มกลับสู่ค่าเริ่มต้น
+   * เรียกใช้เมื่อปิด Dialog หรือหลังบันทึกสำเร็จ
+   */
   const resetForm = () => {
     setSelectedLeaveTypeId("")
     setDaysTaken("")
@@ -59,21 +79,34 @@ export default function RecordLeaveButton({
     setReason("")
   }
 
+  /**
+   * ฟังก์ชันจัดการการ submit ฟอร์มบันทึกการลา
+   *
+   * ขั้นตอนการทำงาน:
+   * 1. ตรวจสอบความถูกต้องของข้อมูลทุกฟิลด์
+   * 2. สร้าง FormData และเพิ่มข้อมูลทั้งหมด
+   * 3. เรียกใช้ Server Action recordLeave
+   * 4. หักลบยอดวันลาคงเหลือโดยอัตโนมัติ
+   * 5. แสดงผลสำเร็จหรือ error
+   */
   const handleSubmit = () => {
-    // 2. ตรวจสอบข้อมูลจาก state
+    // ตรวจสอบว่าได้เลือกประเภทการลาแล้ว
     if (!selectedLeaveTypeId) {
       alert("กรุณาเลือกประเภทการลา")
       return
     }
+    // ตรวจสอบจำนวนวันที่ลา (ต้องมากกว่า 0)
     if (!daysTaken || Number(daysTaken) <= 0) {
       alert("กรุณากรอกจำนวนวันที่ลาให้ถูกต้อง (ต้องมากกว่า 0)")
       return
     }
+    // ตรวจสอบว่าได้เลือกวันที่ลาแล้ว
     if (!leaveDate) {
       alert("กรุณาเลือกวันที่ลา")
       return
     }
 
+    // สร้าง FormData เพื่อส่งไปยัง Server Action
     const formData = new FormData()
     formData.append("employeeId", String(employeeId))
     formData.append("leaveTypeId", selectedLeaveTypeId)
@@ -93,15 +126,14 @@ export default function RecordLeaveButton({
     })
   }
 
-  // Filter out items with null leave_types to prevent issues
+  // กรองเฉพาะ leave balance ที่มีข้อมูล leave_types ครบถ้วน
   const validLeaveBalances = leaveBalances.filter(
     (balance) => balance.leave_types !== null
   )
 
-  // Debug: Log the data to console
+  // Debug logs สำหรับตรวจสอบข้อมูล
   console.log("validLeaveBalances:", validLeaveBalances)
   console.log("selectedLeaveTypeId:", selectedLeaveTypeId)
-
   console.log("employeeId:", employeeId)
   console.log("daysTaken:", daysTaken)
   console.log("leaveDate:", leaveDate)

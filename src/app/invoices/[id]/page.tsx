@@ -7,7 +7,10 @@ import UpdateStatusButton from "./UpdateStatusButton"
 import InvoicePrintDropdown from "./InvoicePrintDropdown"
 import DeleteInvoiceButton from "./DeleteInvoiceButton"
 import PrintReceiptButton from "./PrintReceiptButton" // เพิ่ม Component ใหม่
+import RecordPaymentDialog from "./RecordPaymentDialog"
+import PaymentHistory from "./PaymentHistory"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Table,
   TableBody,
@@ -38,6 +41,9 @@ type Invoice = {
   items: InvoiceItem[]
   status: string
   price_tier: string | null
+  total_amount?: number
+  paid_amount?: number
+  balance_due?: number
   customers: Customer | null
   responsible_persons: ResponsiblePerson | null
 }
@@ -158,6 +164,14 @@ export default async function InvoiceDetailPage(props: {
             </h1>
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">
+            {/* Record Payment Button - Show if invoice is Sent or Overdue and has balance */}
+            {(invoice.status === "Sent" || invoice.status === "Overdue") &&
+             invoice.balance_due > 0 && (
+              <RecordPaymentDialog
+                invoiceId={invoice.id}
+                balanceDue={Number(invoice.balance_due || grandTotal)}
+              />
+            )}
             {/* <InvoicePrintDropdown invoiceNumber={invoice.invoice_number} /> */}
             {/* <InvoicePrintDropdown invoice={invoice} /> */}
             <InvoicePrintDropdown invoiceNumber={invoice.invoice_number} />
@@ -326,6 +340,42 @@ export default async function InvoiceDetailPage(props: {
             </div>
           </div>
         </section>
+      </div>
+
+      {/* Payment Summary Card - No Print */}
+      <div className="no-print max-w-4xl mx-auto mt-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("paymentSummary")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4">
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">{t("totalAmount")}</span>
+                <span className="text-xl font-semibold">
+                  ฿{grandTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">{t("paidAmount")}</span>
+                <span className="text-xl font-semibold text-green-600">
+                  ฿{Number(invoice.paid_amount || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="flex justify-between items-center border-t pt-4">
+                <span className="text-lg font-semibold">{t("balanceDue")}</span>
+                <span className="text-2xl font-bold text-red-600">
+                  ฿{Number(invoice.balance_due || grandTotal).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Payment History - No Print */}
+      <div className="no-print max-w-4xl mx-auto mt-6 mb-6">
+        <PaymentHistory invoiceId={invoice.id} />
       </div>
     </div>
   )

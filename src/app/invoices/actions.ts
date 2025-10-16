@@ -106,7 +106,7 @@ export async function updateInvoiceStatus(
   } = await supabase.auth.getUser()
   if (!user) return { message: "Authentication required" }
 
-  // 1. อัปเดตสถานะของ Invoice ก่อน
+  // 1. อัปเดตสถานะของ Invoice
   const { error: statusUpdateError } = await supabase
     .from("invoices")
     .update({ status: newStatus })
@@ -117,23 +117,7 @@ export async function updateInvoiceStatus(
     return { message: "Error updating status." }
   }
 
-  // 2. ถ้าสถานะที่อัปเดตคือ "Paid" ให้ทำการตัดสต็อก
-  if (newStatus === "Paid") {
-    const { error: rpcError } = await supabase.rpc(
-      "deduct_stock_from_invoice",
-      {
-        p_invoice_id: invoiceId,
-      }
-    )
-
-    if (rpcError) {
-      console.error("Error deducting stock:", rpcError)
-      // Optional: แจ้งเตือนผู้ใช้ว่าตัดสต็อกไม่สำเร็จ แต่สถานะเปลี่ยนแล้ว
-      return { message: "Status updated, but failed to deduct stock." }
-    }
-  }
-
-  // 3. Revalidate path ที่เกี่ยวข้องทั้งหมด
+  // 2. Revalidate path ที่เกี่ยวข้องทั้งหมด
   const { data: invoice } = await supabase
     .from("invoices")
     .select("customer_id")

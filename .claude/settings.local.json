@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell:*)",
+      "Bash(npm test:*)",
+      "Bash(pwsh:*)",
+      "Bash(npm.cmd test)",
+      "Bash(npx vitest run:*)",
+      "Bash(node:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

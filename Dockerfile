@@ -7,6 +7,7 @@ COPY package.json package-lock.json* ./
 # Use a more robust npm install command
 RUN npm install
 
+
 # Stage 2: Build แอปพลิเคชัน
 FROM node:18-alpine AS builder
 WORKDIR /app
@@ -17,7 +18,8 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED 1
 
 # คำสั่ง Build สำหรับ Next.js
-RUN npm run build
+
+
 
 # Stage 3: Production Image (ขั้นตอนสุดท้าย)
 # ใช้ Base Image ที่เล็กและปลอดภัย

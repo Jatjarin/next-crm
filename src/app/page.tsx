@@ -1,3 +1,22 @@
+/**
+ * Dashboard Page - หน้าแดชบอร์ดหลัก
+ * Dashboard Page - Main Dashboard
+ *
+ * จุดประสงค์ของหน้า (Page Purpose):
+ * - แสดงภาพรวมของระบบ CRM รวมถึงยอดขาย สต็อกสินค้า และการแจ้งเตือน
+ * - Display CRM system overview including sales, inventory, and alerts
+ *
+ * การดึงข้อมูล (Data Fetching):
+ * - ใช้ RPC (Remote Procedure Call) เพื่อดึงข้อมูลสถิติทั้งหมดอย่างมีประสิทธิภาพ
+ * - Uses RPC (Remote Procedure Call) for efficient statistics retrieval
+ *
+ * โครงสร้าง Component (Component Structure):
+ * - สรุปยอดขายทั้งหมด (Total Sales Summary)
+ * - ยอดขายแยกตามคลังสินค้า (Sales by Warehouse)
+ * - มูลค่าสินค้าคงคลังแยกตามคลัง (Inventory Value by Warehouse)
+ * - รายการสินค้าที่ใกล้หมด (Low Stock Alert)
+ */
+
 import { createClient } from "@/lib/supabase/server"
 import { getTranslations } from "next-intl/server"
 import Link from "next/link"
@@ -26,6 +45,7 @@ import {
 } from "@/components/ui/table"
 
 // --- Type Definitions ---
+// คำจำกัดความประเภทข้อมูล (Type Definitions)
 type SalesByWarehouse = {
   warehouse_name: string
   total_sales: number | null // Allow for null from the database
@@ -52,10 +72,15 @@ type DashboardStats = {
 }
 
 export default async function DashboardPage() {
+  // สร้าง Supabase client และดึงฟังก์ชันแปลภาษา
+  // Create Supabase client and get translation function
   const supabase = await createClient()
   const t = await getTranslations("Dashboard")
 
+  // ดึงข้อมูลแดชบอร์ดทั้งหมดด้วย RPC calls ที่มีประสิทธิภาพ
   // Fetch all dashboard data with efficient RPC calls
+  // ใช้ Promise.all เพื่อดึงข้อมูลพร้อมกัน ลดเวลารอ
+  // Use Promise.all to fetch data concurrently, reducing wait time
   const [statsData, lowStockData] = await Promise.all([
     supabase.rpc("get_full_dashboard_stats").single(),
     supabase.rpc("get_low_stock_by_warehouse"),
@@ -64,22 +89,27 @@ export default async function DashboardPage() {
   const { data: stats, error: statsError } = statsData
   const { data: lowStockItems, error: lowStockError } = lowStockData
 
+  // ตรวจสอบข้อผิดพลาดในการดึงข้อมูล
+  // Check for errors in data fetching
   if (statsError || lowStockError || !stats) {
     console.error("Dashboard Error:", { statsError, lowStockError })
     return <p className="p-8">Error loading dashboard data.</p>
   }
+
+  // แปลงประเภทข้อมูลเพื่อให้ TypeScript เข้าใจโครงสร้าง
   // Type assertion to tell TypeScript what the stats object contains
   const typedStats = stats as DashboardStats
 
+  // แยกและประมวลผลข้อมูลจาก JSONB columns อย่างปลอดภัย
   // Safely parse the data from the JSONB columns
-  const paidInvoiceTotal = typedStats.paid_invoice_total || 0
-  const totalCashSales = typedStats.total_cash_sales || 0
-  const totalSales = paidInvoiceTotal + totalCashSales
+  const paidInvoiceTotal = typedStats.paid_invoice_total || 0 // ยอดขายจากใบแจ้งหนี้ที่ชำระแล้ว
+  const totalCashSales = typedStats.total_cash_sales || 0 // ยอดขายเงินสด
+  const totalSales = paidInvoiceTotal + totalCashSales // ยอดขายรวมทั้งหมด
   const salesByWarehouse: SalesByWarehouse[] =
-    typedStats.sales_by_warehouse || []
+    typedStats.sales_by_warehouse || [] // ยอดขายแยกตามคลัง
   const inventoryByWarehouse: InventoryByWarehouse[] =
-    typedStats.inventory_by_warehouse || []
-  const typedLowStockItems: LowStockItem[] = lowStockItems || []
+    typedStats.inventory_by_warehouse || [] // มูลค่าสินค้าคงคลังแยกตามคลัง
+  const typedLowStockItems: LowStockItem[] = lowStockItems || [] // รายการสินค้าที่สต็อกต่ำ
 
   return (
     <div className="p-8 space-y-6">

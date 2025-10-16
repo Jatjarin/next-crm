@@ -1,3 +1,17 @@
+/**
+ * UpdateStatusButton Component - ปุ่มอัปเดตสถานะใบเสนอราคา
+ *
+ * คอมโพเนนต์สำหรับเปลี่ยนสถานะของใบเสนอราคาตามขั้นตอนการทำงาน:
+ * - Draft (ฉบับร่าง) -> Sent (ส่งแล้ว) -> Accepted/Rejected (อนุมัติ/ไม่อนุมัติ)
+ *
+ * @param quotationId - รหัสใบเสนอราคาที่ต้องการอัปเดตสถานะ
+ * @param currentStatus - สถานะปัจจุบันของใบเสนอราคา
+ *
+ * พฤติกรรมตามสถานะ:
+ * - Draft: แสดงปุ่ม "ส่งให้ลูกค้า"
+ * - Sent: แสดงปุ่ม "อนุมัติ" และ "ไม่อนุมัติ"
+ * - Accepted/Rejected: แสดงข้อความสถานะสุดท้าย (ไม่มีปุ่ม)
+ */
 "use client"
 
 import { updateQuotationStatus } from "../actions"
@@ -20,6 +34,17 @@ export default function UpdateStatusButton({
   const [isPending, startTransition] = useTransition()
   const t = useTranslations("UpdateStatusButton")
 
+  /**
+   * ฟังก์ชันจัดการการอัปเดตสถานะใบเสนอราคา
+   *
+   * @param newStatus - สถานะใหม่ที่ต้องการเปลี่ยน
+   *
+   * ขั้นตอนการทำงาน:
+   * 1. เรียกใช้ Server Action updateQuotationStatus
+   * 2. ตรวจสอบผลลัพธ์จากการอัปเดต
+   * 3. ถ้าสำเร็จจะ refresh หน้าเพื่อแสดงข้อมูลใหม่
+   * 4. ถ้าไม่สำเร็จจะแสดงข้อความ error
+   */
   const handleUpdateStatus = (newStatus: string) => {
     startTransition(async () => {
       const result = await updateQuotationStatus(quotationId, newStatus)
@@ -31,7 +56,8 @@ export default function UpdateStatusButton({
     })
   }
 
-  // ถ้าสถานะสิ้นสุดแล้ว (อนุมัติ/ไม่อนุมัติ) ให้แสดงแค่สถานะ
+  // ถ้าสถานะสิ้นสุดแล้ว (อนุมัติ/ไม่อนุมัติ) แสดงเฉพาะข้อความสถานะ
+  // ไม่แสดงปุ่มเพราะไม่สามารถเปลี่ยนสถานะต่อได้
   if (currentStatus === "Accepted" || currentStatus === "Rejected") {
     return (
       <span
@@ -51,6 +77,7 @@ export default function UpdateStatusButton({
 
   return (
     <div className="flex gap-2">
+      {/* ถ้าสถานะเป็น "Draft" แสดงปุ่ม "ส่งให้ลูกค้า" เพื่อเปลี่ยนเป็นสถานะ "Sent" */}
       {currentStatus === "Draft" && (
         <Button onClick={() => handleUpdateStatus("Sent")} disabled={isPending}>
           {isPending ? (
@@ -61,8 +88,10 @@ export default function UpdateStatusButton({
           {isPending ? "กำลังส่ง..." : "ส่งให้ลูกค้า"}
         </Button>
       )}
+      {/* ถ้าสถานะเป็น "Sent" แสดงปุ่มให้เลือก "อนุมัติ" หรือ "ไม่อนุมัติ" */}
       {currentStatus === "Sent" && (
         <>
+          {/* ปุ่มอนุมัติ - เปลี่ยนสถานะเป็น "Accepted" */}
           <Button
             variant="success"
             onClick={() => handleUpdateStatus("Accepted")}
@@ -75,6 +104,7 @@ export default function UpdateStatusButton({
             )}
             อนุมัติ
           </Button>
+          {/* ปุ่มไม่อนุมัติ - เปลี่ยนสถานะเป็น "Rejected" */}
           <Button
             variant="destructive"
             onClick={() => handleUpdateStatus("Rejected")}

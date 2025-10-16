@@ -14,5 +14,11 @@ export default async function ProductsPage() {
     return <p className="p-8">เกิดข้อผิดพลาดในการโหลดข้อมูลสินค้า</p>
   }
 
-  return <ProductClientPage initialProducts={products || []} />
+  // Fetch suppliers for the dropdown
+  const { data: suppliers } = await supabase
+    .from("suppliers")
+    .select("id, name")
+    .order("name", { ascending: true })
+
+  return <ProductClientPage initialProducts={products || []} suppliers={suppliers || []} />
 }

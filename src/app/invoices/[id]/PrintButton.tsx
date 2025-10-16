@@ -1,3 +1,17 @@
+/**
+ * PrintButton Component - ปุ่มพิมพ์/ส่งออกใบแจ้งหนี้เป็น PDF
+ *
+ * คอมโพเนนต์นี้ใช้สำหรับพิมพ์หรือส่งออกใบแจ้งหนี้เป็น PDF โดยจะเปิดหน้าต่างพิมพ์ใหม่
+ * ที่มีการจัดรูปแบบและสไตล์ที่เหมาะสมสำหรับการพิมพ์
+ *
+ * @param invoiceNumber - หมายเลขใบแจ้งหนี้ที่ใช้แสดงในชื่อเอกสาร
+ *
+ * การทำงาน:
+ * 1. อ่านข้อมูลจาก DOM element ที่มี id "printable-area"
+ * 2. แปลงข้อมูลเป็น HTML ที่จัดรูปแบบสำหรับการพิมพ์
+ * 3. เปิดหน้าต่างใหม่และแสดงเอกสารที่พร้อมพิมพ์
+ * 4. เรียกใช้ window.print() อัตโนมัติเมื่อโหลดเสร็จ
+ */
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -9,6 +23,7 @@ interface Props {
 }
 
 export default function PrintButton({ invoiceNumber }: Props) {
+  // State สำหรับจัดการสถานะการโหลดระหว่างเตรียมการพิมพ์
   const [isGenerating, setIsGenerating] = useState(false)
 
   // ฟังก์ชันสำหรับแปลง DOM เป็น HTML ที่พิมพ์ได้
@@ -133,10 +148,22 @@ export default function PrintButton({ invoiceNumber }: Props) {
     `
   }
 
+  /**
+   * ฟังก์ชันจัดการการส่งออก PDF และการพิมพ์
+   *
+   * ขั้นตอนการทำงาน:
+   * 1. ตั้งค่าสถานะ loading เป็น true
+   * 2. ค้นหา element ที่มีข้อมูลใบแจ้งหนี้
+   * 3. เปิดหน้าต่างใหม่สำหรับแสดงเอกสาร
+   * 4. สร้าง HTML ที่จัดรูปแบบพร้อม inline styles
+   * 5. เขียน HTML ลงในหน้าต่างใหม่
+   * 6. เรียกใช้ window.print() อัตโนมัติ
+   */
   const handleExportPDF = async () => {
     setIsGenerating(true)
 
     try {
+      // ค้นหา element ที่เก็บข้อมูลใบแจ้งหนี้
       const invoiceElement = document.getElementById("printable-area")
       if (!invoiceElement) {
         alert("ไม่พบส่วนของใบแจ้งหนี้ที่สามารถพิมพ์ได้")
@@ -144,6 +171,7 @@ export default function PrintButton({ invoiceNumber }: Props) {
         return
       }
 
+      // เปิดหน้าต่างใหม่สำหรับแสดงเอกสารที่จะพิมพ์
       const printWindow = window.open("", "_blank")
       if (!printWindow) {
         alert("กรุณาอนุญาตให้เปิด popup window")
@@ -219,11 +247,13 @@ export default function PrintButton({ invoiceNumber }: Props) {
 
   return (
     <Button variant="outline" onClick={handleExportPDF} disabled={isGenerating}>
+      {/* แสดงไอคอน Loading ขณะกำลังเตรียมการพิมพ์ */}
       {isGenerating ? (
         <Loader2 size={16} className="mr-2 animate-spin" />
       ) : (
         <Printer size={16} className="mr-2" />
       )}
+      {/* แสดงข้อความตามสถานะการทำงาน */}
       {isGenerating ? "กำลังเตรียมการพิมพ์..." : "พิมพ์ / Export PDF"}
     </Button>
   )

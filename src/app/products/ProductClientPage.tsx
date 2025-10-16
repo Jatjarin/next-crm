@@ -39,11 +39,17 @@ type Product = {
   thickness: number | null
 }
 
-interface Props {
-  initialProducts: Product[]
+type Supplier = {
+  id: number
+  name: string
 }
 
-export default function ProductClientPage({ initialProducts }: Props) {
+interface Props {
+  initialProducts: Product[]
+  suppliers: Supplier[]
+}
+
+export default function ProductClientPage({ initialProducts, suppliers }: Props) {
   const [products, setProducts] = useState(initialProducts)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -181,6 +187,24 @@ export default function ProductClientPage({ initialProducts }: Props) {
                     defaultValue={0}
                     required
                   />
+                </div>
+                {/* Supplier Selection */}
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="supplierId" className="text-right">
+                    {t("supplier")}
+                  </Label>
+                  <select
+                    id="supplierId"
+                    name="supplierId"
+                    className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    <option value="">{t("selectSupplier")}</option>
+                    {suppliers.map((supplier) => (
+                      <option key={supplier.id} value={supplier.id}>
+                        {supplier.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <DialogFooter>

@@ -22,6 +22,10 @@ import {
   Receipt,
   Laptop,
   PieChart,
+  Truck,
+  ShoppingCart,
+  PackageSearch,
+  Scan,
   //BookUser,
 } from "lucide-react"
 import { logout } from "./actions"
@@ -105,13 +109,22 @@ export default function Sidebar() {
       title: tSections("main"),
       items: [
         { href: "/", label: t("dashboard"), icon: LayoutDashboard },
+      ],
+    },
+    {
+      title: tSections("reports"),
+      items: [
         { href: "/reports", label: t("reports"), icon: BarChart2 },
+        { href: "/reports/inventory-valuation", label: t("inventoryValuation"), icon: PieChart },
+        { href: "/reports/outstanding-invoices", label: t("outstandingInvoices"), icon: FileText },
       ],
     },
     {
       title: tSections("sales"),
       items: [
         { href: "/customers", label: t("customers"), icon: Users },
+        { href: "/suppliers", label: t("suppliers"), icon: Truck },
+        { href: "/purchase-orders", label: t("purchaseOrders"), icon: ShoppingCart },
         { href: "/quotations", label: t("quotations"), icon: ClipboardList },
         { href: "/invoices", label: t("invoices"), icon: FileText },
         { href: "/cash-bills", label: t("cashBills"), icon: Receipt },
@@ -122,10 +135,15 @@ export default function Sidebar() {
       items: [
         { href: "/products", label: t("products"), icon: Package },
         { href: "/warehouses", label: t("warehouses"), icon: Warehouse },
+        { href: "/stock-adjustments", label: t("stockAdjustments"), icon: PackageSearch },
         {
-          href: "/warehouses/summary",
-          label: t("warehouseSummary"),
-          icon: PieChart,
+          href: "/scanner",
+          label: t("scanner"),
+          icon: Scan,
+          submenus: [
+            { href: "/scanner/quick-sale", label: t("quickSale") },
+            { href: "/scanner/stock-check", label: t("stockCheck") },
+          ],
         },
       ],
     },
