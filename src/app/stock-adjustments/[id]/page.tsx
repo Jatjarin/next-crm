@@ -1,12 +1,12 @@
-import { getTranslations } from "next-intl/server"
-import { notFound } from "next/navigation"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { getStockAdjustmentById } from "../actions"
-import { DeleteButton } from "./DeleteButton"
-import { ArrowLeft } from "lucide-react"
+import { getTranslations } from "next-intl/server";
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { getStockAdjustmentById } from "../actions";
+import { DeleteButton } from "./DeleteButton";
+import { ArrowLeft } from "lucide-react";
 
 const adjustmentTypeColors = {
   damage: "destructive",
@@ -15,18 +15,19 @@ const adjustmentTypeColors = {
   count_correction: "secondary",
   return: "outline",
   other: "outline",
-} as const
+} as const;
 
-export default async function StockAdjustmentDetailPage({
-  params,
-}: {
-  params: { id: string }
-}) {
-  const t = await getTranslations("StockAdjustments")
-  const adjustment = await getStockAdjustmentById(params.id)
+type Props = {
+  params: Promise<{ id: string }>;
+};
+
+export default async function StockAdjustmentDetailPage(props: Props) {
+  const params = await props.params;
+  const t = await getTranslations("StockAdjustments");
+  const adjustment = await getStockAdjustmentById(params.id);
 
   if (!adjustment) {
-    notFound()
+    notFound();
   }
 
   return (
@@ -40,7 +41,9 @@ export default async function StockAdjustmentDetailPage({
         </Button>
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold">{adjustment.adjustment_number}</h1>
+            <h1 className="text-3xl font-bold">
+              {adjustment.adjustment_number}
+            </h1>
             <p className="text-muted-foreground">
               {new Date(adjustment.adjustment_date).toLocaleString()}
             </p>
@@ -57,7 +60,10 @@ export default async function StockAdjustmentDetailPage({
           <CardContent className="space-y-4">
             <div>
               <p className="text-sm text-muted-foreground">{t("type")}</p>
-              <Badge variant={adjustmentTypeColors[adjustment.adjustment_type]} className="mt-1">
+              <Badge
+                variant={adjustmentTypeColors[adjustment.adjustment_type]}
+                className="mt-1"
+              >
                 {t(`types.${adjustment.adjustment_type}`)}
               </Badge>
             </div>
@@ -102,7 +108,8 @@ export default async function StockAdjustmentDetailPage({
                 {adjustment.product?.name}
               </Link>
               <p className="text-sm mt-1">
-                {t("currentStock")}: {adjustment.product?.stock_quantity} {t("units")}
+                {t("currentStock")}: {adjustment.product?.stock_quantity}{" "}
+                {t("units")}
               </p>
             </div>
 
@@ -136,5 +143,5 @@ export default async function StockAdjustmentDetailPage({
         </Card>
       </div>
     </div>
-  )
+  );
 }
