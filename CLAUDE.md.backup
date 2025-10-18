@@ -19,7 +19,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **PDF Generation**: jsPDF, pdf-lib
 - **QR Codes**: qrcode.react
 - **Barcodes**: react-barcode, html5-qrcode
-- **Spreadsheets**: exceljs (for Excel export)
 
 ## Common Commands
 
@@ -311,37 +310,10 @@ import { Html5QrcodeScanner } from "html5-qrcode"
 #### 9. Database Schema Notes
 
 - Invoice numbering follows pattern: `INVNo{YY}{NNN}{INITIALS}` (e.g., `INVNo25001PW`)
-- Shipment numbering: `IMP{YY}{NNNN}` for imports, `EXP{YY}{NNNN}` for exports
 - Relationships use Supabase foreign keys (e.g., `invoices.customer_id -> customers.id`)
 - JSON columns store complex data (e.g., `invoice.items` is `InvoiceItem[]`)
 - SQL migration files are in the root directory (e.g., `database-*.sql`)
 - RPC functions handle complex operations (e.g., `adjust_inventory_in_warehouse`, `transfer_stock`)
-
-#### 10. Advanced Analytics with RPC Functions
-
-The analytics module (`src/app/reports/analytics/`) uses Supabase RPC (Remote Procedure Call) functions for complex analytics queries:
-
-```typescript
-// Call RPC function from server action
-const { data, error } = await supabase.rpc('get_sales_by_period', {
-  start_date: '2025-01-01',
-  end_date: '2025-12-31',
-  period_type: 'month'
-})
-```
-
-**Key Analytics Functions**:
-- `get_sales_by_period` - Sales trends by day/week/month/year
-- `get_top_customers` - Customer ranking by revenue
-- `get_customer_lifetime_value` - LTV analysis
-- `get_product_performance` - Product sales metrics
-- `get_stock_turnover_rate` - Inventory turnover
-- `get_profit_loss_statement` - P&L report
-- `get_accounts_receivable_aging` - AR aging buckets
-- `get_shipment_analytics` - Import/export statistics
-- `get_customs_clearance_stats` - Customs processing metrics
-
-These functions are defined in `database-advanced-analytics.sql` and provide optimized, aggregated data for reporting.
 
 ## Development Guidelines
 
@@ -374,8 +346,7 @@ vi.mock("@/lib/supabase/server", () => ({
     })),
     auth: {
       getUser: vi.fn().mockResolvedValue({
-        data: { user: { id: "123" },
-    rpc: vi.fn().mockResolvedValue({ data: [], error: null }), },
+        data: { user: { id: "123" } },
         error: null
       })
     },
@@ -402,7 +373,6 @@ vi.mock("next/navigation", () => ({
 - **Async Params**: In Next.js 15, params must be awaited: `const params = await props.params`
 - **Client Directive**: Components using hooks or browser APIs need `"use client"` directive
 - **Error Handling**: Always check `error` from Supabase operations before using `data`
-- **RPC Functions**: When mocking tests that use `.rpc()`, ensure the mock includes the rpc method
 
 ### Docker Deployment
 
@@ -443,37 +413,9 @@ The app is organized by business modules:
 - **assets**: Office asset tracking with QR codes
 - **responsible-persons**: Contact persons for customers
 - **scanner**: QR/Barcode scanning interface
-- **import-shipments**: Pine wood import tracking from Russia (container shipping, customs, warehouse receipt)
-- **export-shipments**: Teak wood export tracking to international customers (permits, shipping, delivery)
 - **reports**: Business reports (inventory valuation, outstanding invoices)
-- **reports/analytics**: Advanced analytics with RPC functions (sales trends, customer lifetime value, product performance, financial reports)
 
 Each module follows the same pattern: list page, detail page, actions, and tests.
-
-### Import/Export Shipments Module
-
-The shipment modules track international trade operations:
-
-**Import Shipments** (Pine wood from Russia):
-- Tracks origin port, destination port, vessel details, container info
-- Monitors customs clearance status and dates
-- Calculates total landed cost (freight + insurance + customs duty)
-- Uses Incoterm: CIF (Cost, Insurance, Freight)
-- Auto-generates shipment numbers: `IMP{YY}{NNNN}`
-
-**Export Shipments** (Teak wood to international customers):
-- Tracks export permits and customs documentation
-- Links to customer invoices
-- Monitors packing, shipping, and delivery dates
-- Calculates total export cost
-- Uses Incoterm: FOB (Free On Board)
-- Auto-generates shipment numbers: `EXP{YY}{NNNN}`
-
-Both modules support:
-- Document attachments (Bill of Lading, invoices, certificates)
-- Status tracking through shipment lifecycle
-- Warehouse assignment and stock integration
-- Multiple currencies (default: USD)
 
 ## Key Files Reference
 
@@ -486,5 +428,3 @@ Both modules support:
 - `i18n/request.ts` - Locale detection logic
 - `next.config.ts` - Next.js configuration
 - `vitest.config.mts` - Vitest configuration
-- `database-import-export-module.sql` - Import/export shipments schema
-- `database-advanced-analytics.sql` - Analytics RPC functions

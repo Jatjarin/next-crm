@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
 // Corrected: Import both Link and usePathname from 'next-intl/navigation'
 //import { Link, usePathname } from "next-intl/navigation"
-import Link from "next/link"
+import Link from "next/link";
 //import { usePathname } from "next-intl/navigation";
-import { usePathname } from "next/navigation"
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
@@ -26,24 +26,26 @@ import {
   ShoppingCart,
   PackageSearch,
   Scan,
+  Ship,
+  Plane,
   //BookUser,
-} from "lucide-react"
-import { logout } from "./actions"
-import { Button } from "@/components/ui/button"
+} from "lucide-react";
+import { logout } from "./actions";
+import { Button } from "@/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
-import { useTranslations } from "next-intl"
-import LanguageSwitcher from "./LanguageSwitcher"
-import { Separator } from "@radix-ui/react-dropdown-menu"
+} from "@/components/ui/collapsible";
+import { useTranslations } from "next-intl";
+import LanguageSwitcher from "./LanguageSwitcher";
+import { Separator } from "@radix-ui/react-dropdown-menu";
 
 interface MenuItem {
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
-  label: string
-  href: string
-  submenus?: { href: string; label: string }[]
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  label: string;
+  href: string;
+  submenus?: { href: string; label: string }[];
 }
 
 // Helper component for individual menu items to keep the code clean
@@ -63,7 +65,7 @@ const NavItem = ({ item, pathname }: { item: MenuItem; pathname: string }) => {
         </CollapsibleTrigger>
         <CollapsibleContent className="space-y-1 pt-1 pl-6">
           {item.submenus.map((submenu: { href: string; label: string }) => {
-            const isSubmenuActive = pathname === submenu.href
+            const isSubmenuActive = pathname === submenu.href;
             return (
               <Button
                 key={submenu.label}
@@ -75,11 +77,11 @@ const NavItem = ({ item, pathname }: { item: MenuItem; pathname: string }) => {
                   {submenu.label}
                 </Link>
               </Button>
-            )
+            );
           })}
         </CollapsibleContent>
       </Collapsible>
-    )
+    );
   }
 
   return (
@@ -94,29 +96,40 @@ const NavItem = ({ item, pathname }: { item: MenuItem; pathname: string }) => {
         {item.label}
       </Link>
     </Button>
-  )
-}
+  );
+};
 
 export default function Sidebar() {
-  const pathname = usePathname()
-  const t = useTranslations("Sidebar")
-  const tSubmenu = useTranslations("Submenu")
-  const tSections = useTranslations("SidebarSections")
+  const pathname = usePathname();
+  const t = useTranslations("Sidebar");
+  const tSubmenu = useTranslations("Submenu");
+  const tSections = useTranslations("SidebarSections");
 
   // 2. Reorganize menu items into logical sections
   const menuSections = [
     {
       title: tSections("main"),
-      items: [
-        { href: "/", label: t("dashboard"), icon: LayoutDashboard },
-      ],
+      items: [{ href: "/", label: t("dashboard"), icon: LayoutDashboard }],
     },
     {
       title: tSections("reports"),
       items: [
         { href: "/reports", label: t("reports"), icon: BarChart2 },
-        { href: "/reports/inventory-valuation", label: t("inventoryValuation"), icon: PieChart },
-        { href: "/reports/outstanding-invoices", label: t("outstandingInvoices"), icon: FileText },
+        {
+          href: "/reports/inventory-valuation",
+          label: t("inventoryValuation"),
+          icon: PieChart,
+        },
+        {
+          href: "/reports/outstanding-invoices",
+          label: t("outstandingInvoices"),
+          icon: FileText,
+        },
+        {
+          href: "/reports/analytics",
+          label: t("advancedAnalytics"),
+          icon: BarChart2,
+        },
       ],
     },
     {
@@ -124,18 +137,34 @@ export default function Sidebar() {
       items: [
         { href: "/customers", label: t("customers"), icon: Users },
         { href: "/suppliers", label: t("suppliers"), icon: Truck },
-        { href: "/purchase-orders", label: t("purchaseOrders"), icon: ShoppingCart },
+        {
+          href: "/purchase-orders",
+          label: t("purchaseOrders"),
+          icon: ShoppingCart,
+        },
         { href: "/quotations", label: t("quotations"), icon: ClipboardList },
         { href: "/invoices", label: t("invoices"), icon: FileText },
         { href: "/cash-bills", label: t("cashBills"), icon: Receipt },
       ],
     },
     {
+      title: tSections("international"),
+      items: [
+        { href: "/import-shipments", label: t("importShipments"), icon: Ship },
+        { href: "/export-shipments", label: t("exportShipments"), icon: Plane },
+      ],
+    },
+
+    {
       title: tSections("inventory"),
       items: [
         { href: "/products", label: t("products"), icon: Package },
         { href: "/warehouses", label: t("warehouses"), icon: Warehouse },
-        { href: "/stock-adjustments", label: t("stockAdjustments"), icon: PackageSearch },
+        {
+          href: "/stock-adjustments",
+          label: t("stockAdjustments"),
+          icon: PackageSearch,
+        },
         {
           href: "/scanner",
           label: t("scanner"),
@@ -170,7 +199,7 @@ export default function Sidebar() {
         },
       ],
     },
-  ]
+  ];
 
   return (
     <aside className="hidden h-screen w-64 flex-col border-r bg-background md:flex">
@@ -228,5 +257,5 @@ export default function Sidebar() {
         </div>
       </div>
     </aside>
-  )
+  );
 }
