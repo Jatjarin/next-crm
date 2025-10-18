@@ -237,6 +237,16 @@ export default function Sidebar() {
             </Link>
           </Button> */}
           <Button
+            variant={pathname === "/users" ? "secondary" : "ghost"}
+            className="w-full justify-start"
+            asChild
+          >
+            <Link href="/users">
+              <Shield className="mr-2 h-4 w-4" />
+              {t("users")}
+            </Link>
+          </Button>
+          <Button
             variant={pathname === "/settings" ? "secondary" : "ghost"}
             className="w-full justify-start"
             asChild

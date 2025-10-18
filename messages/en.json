@@ -24,6 +24,7 @@
     "advancedAnalytics": "Advanced Analytics",
     "importShipments": "Import Shipments",
     "exportShipments": "Export Shipments",
+    "users": "User Management",
     "settings": "Settings",
     "logout": "Logout"
   },
