@@ -202,11 +202,11 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="hidden h-screen w-64 flex-col border-r bg-background md:flex">
-      <div className="border-b p-4">
+    <aside className="hidden min-h-screen h-full w-64 flex-col border-r bg-background md:flex sticky top-0">
+      <div className="border-b p-4 bg-background">
         <h1 className="text-2xl font-bold">EZ ERP</h1>
       </div>
-      <div className="flex flex-1 flex-col justify-between p-4">
+      <div className="flex flex-1 flex-col justify-between p-4 bg-background overflow-y-auto">
         <nav className="flex flex-col gap-y-4">
           {/* 3. Render sections with separators */}
           {menuSections.map((section, index) => (
