@@ -28,6 +28,7 @@ import {
   Scan,
   Ship,
   Plane,
+  Shield,
   //BookUser,
 } from "lucide-react";
 import { logout } from "./actions";
