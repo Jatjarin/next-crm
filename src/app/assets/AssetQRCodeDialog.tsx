@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -10,39 +10,43 @@ import {
   DialogTrigger,
   DialogFooter,
   DialogDescription,
-} from "@/components/ui/dialog"
-import { QrCode, Printer } from "lucide-react"
-import { QRCodeSVG } from "qrcode.react"
+} from "@/components/ui/dialog";
+import { QrCode, Printer } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 
 type Asset = {
-  id: number
-  asset_tag: string
-  type: string
-  model: string | null
-}
+  id: number;
+  asset_tag: string;
+  type: string;
+  model: string | null;
+};
 
 interface Props {
-  asset: Asset
+  asset: Asset;
 }
 
 export default function AssetQRCodeDialog({ asset }: Props) {
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(false);
 
   // แก้ไข: สร้าง URL ให้ชี้ไปที่หน้า /public/asset/[id]
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-  const assetUrl = `${appUrl}/public/asset/${asset.id}`
+  // Use window.location.origin for dynamic URL in production
+  const appUrl =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const assetUrl = `${appUrl}/public/asset/${asset.id}`;
 
   const handlePrint = () => {
     const qrCodeSvgElement = document.getElementById(
-      `qr-code-for-print-${asset.id}`
-    )
-    if (!qrCodeSvgElement) return
+      `qr-code-for-print-${asset.id}`,
+    );
+    if (!qrCodeSvgElement) return;
 
-    const svgClone = qrCodeSvgElement.cloneNode(true) as SVGElement
-    svgClone.setAttribute("width", "150px")
-    svgClone.setAttribute("height", "150px")
+    const svgClone = qrCodeSvgElement.cloneNode(true) as SVGElement;
+    svgClone.setAttribute("width", "150px");
+    svgClone.setAttribute("height", "150px");
 
-    const printWindow = window.open("", "_blank")
+    const printWindow = window.open("", "_blank");
     if (printWindow) {
       printWindow.document.write(`
         <html>
@@ -79,15 +83,15 @@ export default function AssetQRCodeDialog({ asset }: Props) {
             </div>
           </body>
         </html>
-      `)
-      printWindow.document.close()
-      printWindow.focus()
+      `);
+      printWindow.document.close();
+      printWindow.focus();
       setTimeout(() => {
-        printWindow.print()
-        printWindow.close()
-      }, 250)
+        printWindow.print();
+        printWindow.close();
+      }, 250);
     }
-  }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -127,5 +131,5 @@ export default function AssetQRCodeDialog({ asset }: Props) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
