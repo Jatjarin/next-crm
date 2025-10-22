@@ -1,10 +1,14 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { UserProfile, UserRole, getRoleDisplayName } from "@/lib/permissions"
-import { updateUserRole } from "./actions"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState } from "react";
+import {
+  UserProfile,
+  UserRole,
+  getRoleDisplayName,
+} from "@/lib/permissions-utils";
+import { updateUserRole } from "./actions";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -12,21 +16,21 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { useRouter } from "next/navigation"
-import { Shield, User, CheckCircle, XCircle } from "lucide-react"
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { useRouter } from "next/navigation";
+import { Shield, User, CheckCircle, XCircle } from "lucide-react";
 
 interface Props {
-  initialUsers: UserProfile[]
-  currentUserRole: UserRole
+  initialUsers: UserProfile[];
+  currentUserRole: UserRole;
 }
 
 const ROLE_OPTIONS: UserRole[] = [
@@ -40,7 +44,7 @@ const ROLE_OPTIONS: UserRole[] = [
   "shipping",
   "hr",
   "viewer",
-]
+];
 
 const ROLE_COLORS: Record<UserRole, string> = {
   director: "bg-purple-100 text-purple-800",
@@ -53,30 +57,33 @@ const ROLE_COLORS: Record<UserRole, string> = {
   shipping: "bg-indigo-100 text-indigo-800",
   hr: "bg-red-100 text-red-800",
   viewer: "bg-gray-100 text-gray-800",
-}
+};
 
-export default function UserManagementClient({ initialUsers, currentUserRole }: Props) {
-  const [users, setUsers] = useState(initialUsers)
-  const [loading, setLoading] = useState<string | null>(null)
-  const router = useRouter()
+export default function UserManagementClient({
+  initialUsers,
+  currentUserRole,
+}: Props) {
+  const [users, setUsers] = useState(initialUsers);
+  const [loading, setLoading] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleRoleChange = async (userId: string, newRole: UserRole) => {
-    setLoading(userId)
+    setLoading(userId);
     try {
-      await updateUserRole(userId, newRole)
+      await updateUserRole(userId, newRole);
       setUsers((prev) =>
         prev.map((user) =>
-          user.id === userId ? { ...user, role: newRole } : user
-        )
-      )
-      router.refresh()
+          user.id === userId ? { ...user, role: newRole } : user,
+        ),
+      );
+      router.refresh();
     } catch (error) {
-      console.error("Error updating role:", error)
-      alert("Failed to update user role")
+      console.error("Error updating role:", error);
+      alert("Failed to update user role");
     } finally {
-      setLoading(null)
+      setLoading(null);
     }
-  }
+  };
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8 max-w-full">
@@ -84,7 +91,9 @@ export default function UserManagementClient({ initialUsers, currentUserRole }: 
         <Shield className="h-8 w-8 text-blue-600" />
         <div>
           <h1 className="text-3xl font-bold">User Management</h1>
-          <p className="text-muted-foreground">Manage user roles and permissions</p>
+          <p className="text-muted-foreground">
+            Manage user roles and permissions
+          </p>
         </div>
       </div>
 
@@ -147,7 +156,8 @@ export default function UserManagementClient({ initialUsers, currentUserRole }: 
                     </td>
                     <td className="p-4 align-middle">
                       {currentUserRole === "director" ||
-                       (currentUserRole === "admin" && user.role !== "director") ? (
+                      (currentUserRole === "admin" &&
+                        user.role !== "director") ? (
                         <Select
                           value={user.role}
                           onValueChange={(value) =>
@@ -227,7 +237,10 @@ export default function UserManagementClient({ initialUsers, currentUserRole }: 
             <div className="flex justify-between">
               <span>Admins:</span>
               <strong>
-                {users.filter((u) => ["director", "admin"].includes(u.role)).length}
+                {
+                  users.filter((u) => ["director", "admin"].includes(u.role))
+                    .length
+                }
               </strong>
             </div>
           </CardContent>
@@ -248,5 +261,5 @@ export default function UserManagementClient({ initialUsers, currentUserRole }: 
         </Card>
       </div>
     </div>
-  )
+  );
 }
