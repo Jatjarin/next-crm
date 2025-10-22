@@ -5,8 +5,8 @@
  * ไฟล์นี้จัดการเซสชันใน Next.js middleware
  */
 
-import { createServerClient, type CookieOptions } from "@supabase/ssr"
-import { NextResponse, type NextRequest } from "next/server"
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
 
 /**
  * Updates and manages user session in Next.js middleware
@@ -59,7 +59,7 @@ export async function updateSession(request: NextRequest) {
     request: {
       headers: request.headers,
     },
-  })
+  });
 
   // Initialize Supabase server client / เริ่มต้น Supabase server client
   const supabase = createServerClient(
@@ -69,32 +69,44 @@ export async function updateSession(request: NextRequest) {
       cookies: {
         // Get cookie from request / ดึงคุกกี้จากคำขอ
         get(name: string) {
-          return request.cookies.get(name)?.value
+          return request.cookies.get(name)?.value;
         },
         // Set cookie in request and response / ตั้งค่าคุกกี้ในคำขอและการตอบกลับ
         set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({ name, value, ...options })
+          // Ensure cookies work properly in production
+          const cookieOptions = {
+            ...options,
+            sameSite: "lax" as const,
+            secure: process.env.NODE_ENV === "production",
+            path: "/",
+          };
+          request.cookies.set({ name, value, ...cookieOptions });
           response = NextResponse.next({
             request: { headers: request.headers },
-          })
-          response.cookies.set({ name, value, ...options })
+          });
+          response.cookies.set({ name, value, ...cookieOptions });
         },
         // Remove cookie from request and response / ลบคุกกี้จากคำขอและการตอบกลับ
         remove(name: string, options: CookieOptions) {
-          request.cookies.set({ name, value: "", ...options })
+          const cookieOptions = {
+            ...options,
+            maxAge: 0,
+            path: "/",
+          };
+          request.cookies.set({ name, value: "", ...cookieOptions });
           response = NextResponse.next({
             request: { headers: request.headers },
-          })
-          response.cookies.set({ name, value: "", ...options })
+          });
+          response.cookies.set({ name, value: "", ...cookieOptions });
         },
       },
-    }
-  )
+    },
+  );
 
   // Retrieve current authenticated user / ดึงข้อมูลผู้ใช้ที่ยืนยันตัวตนปัจจุบัน
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
-  return { response, user }
+  return { response, user };
 }
